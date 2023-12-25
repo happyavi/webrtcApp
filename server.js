@@ -3,14 +3,13 @@ const app = express();
 const fs = require("fs");
 const PORT = process.env.PORT || 3000;
 
-// Specify the self-signed certificate for https connection (Remove these lines)
-const options = {
-   key: fs.readFileSync("key.pem"),
-   cert: fs.readFileSync("cert.pem")
- };
-
-// Use http instead of https
-const server = require("https").createServer(options, app);
+// Remove these lines
+// const options = {
+//   key: fs.readFileSync("key.pem"),
+//   cert: fs.readFileSync("cert.pem")
+// };
+// const server = require("https").createServer(options, app);
+const server = require("http").createServer(app);
 
 const io = require("socket.io")(server);
 
