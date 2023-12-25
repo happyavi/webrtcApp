@@ -123,22 +123,6 @@ socket.on("answer", answer => {
     });
 });
 
-
-socket.on("answer", answer => {
-  pc.setRemoteDescription(new RTCSessionDescription(answer))
-    .catch(err => {
-      console.error("Error setting remote description:", err);
-    });
-});
-
-
-socket.on("answer", answer => {
-  pc.setRemoteDescription(new RTCSessionDescription(answer))
-    .catch(err => {
-      console.error("Error setting remote description:", err);
-    });
-});
-
 socket.on("candidate", event => {
   var iceCandidate = new RTCIceCandidate({
     sdpMLineIndex: event.label,
