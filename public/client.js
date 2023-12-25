@@ -103,6 +103,8 @@ socket.on("receive-streaming", () => {
       .catch(err => {
         console.error("Error creating or setting local description:", err);
       });
+  } else {
+    console.warn("Invalid signaling state for offer:", pc.signalingState);
   }
 });
 
