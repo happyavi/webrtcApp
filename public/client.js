@@ -13,7 +13,7 @@ const iceServers = {
 };
 
 const pc = new RTCPeerConnection(iceServers);
-const socket = io("https://webrtcmyapp-7ed30d2c45a3.herokuapp.com/");
+const socket = io();
 
 var localeStream;
 var isSource = false;
