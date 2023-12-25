@@ -1,3 +1,4 @@
+// client.js
 // get the references for elements
 var dashboard = document.querySelector("#dashboard"),
   stream = document.querySelector("#stream"),
@@ -94,25 +95,21 @@ socket.on("offer", offer => {
     return;
   }
 
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
+  pc.onnegotiationneeded = () => {
+    pc.createAnswer()
+      .then(answer => pc.setLocalDescription(answer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("answer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  };
 
   pc.setRemoteDescription(new RTCSessionDescription(offer))
-    .then(() => {
-      if (pc.signalingState === "have-remote-offer") {
-        return pc.createAnswer();
-      }
-    })
-    .then(description => pc.setLocalDescription(description))
-    .then(() => {
-      if (pc.localDescription) {
-        console.log("Setting local description", pc.localDescription);
-        socket.emit("answer", pc.localDescription);
-      }
-    })
     .catch(err => {
-      console.error("Error setting remote description or creating local description:", err);
+      console.error("Error setting remote description:", err);
     });
 });
 
