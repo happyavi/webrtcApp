@@ -3,15 +3,15 @@ const app = express();
 const fs = require("fs");
 const PORT = process.env.PORT || 3000;
 
-// paste your IP address of the local network
-const HOST = "192.168.29.192";
+// Specify the self-signed certificate for https connection (Remove these lines)
+// const options = {
+//   key: fs.readFileSync("key.pem"),
+//   cert: fs.readFileSync("cert.pem")
+// };
 
-// specify the self-signed certificate for https connection
-const options = {
-  key: fs.readFileSync("key.pem"),
-  cert: fs.readFileSync("cert.pem")
-};
-const server = require("https").createServer(options, app);
+// Use http instead of https
+const server = require("http").createServer(app);
+
 const io = require("socket.io")(server);
 
 app.use(express.static("public"));
