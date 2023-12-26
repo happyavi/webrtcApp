@@ -3,7 +3,6 @@ const app = express();
 const fs = require("fs");
 const PORT = process.env.PORT || 3000;
 
-// Remove these lines
 // const options = {
 //   key: fs.readFileSync("key.pem"),
 //   cert: fs.readFileSync("cert.pem")

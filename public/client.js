@@ -1,4 +1,3 @@
-// get the references for elements
 var dashboard = document.querySelector("#dashboard"),
   stream = document.querySelector("#stream"),
   client = document.querySelector("#client"),
@@ -61,7 +60,7 @@ socket.on("start-streaming", () => {
       }
       localeStream = userStream;
       try {
-        client.play(); // Remove the 'await' keyword
+        client.play();
       } catch (err) {
         console.error(err);
       }
