@@ -1,9 +1,9 @@
 var dashboard = document.querySelector("#dashboard"),
-  stream = document.querySelector("#stream"),
-  client = document.querySelector("#client"),
-  connect = document.querySelector("#connect"),
-  guest = document.querySelector("#guest"),
-  hangUp = document.querySelector("#hang-up");
+  stream = document.querySelector("#stream"),
+  client = document.querySelector("#client"),
+  connect = document.querySelector("#connect"),
+  guest = document.querySelector("#guest"),
+  hangUp = document.querySelector("#hang-up");
 
 const iceServers = {
   iceServers: [
@@ -54,7 +54,10 @@ socket.on("local-file", fileData => {
     socket.emit("start-streaming");
   } else {
     // Display the local video file stream
-    client.src = fileData.data;
+    const blob = base64toBlob(fileData.data);
+    const blobUrl = URL.createObjectURL(blob);
+    
+    client.src = blobUrl;
   }
 });
 
@@ -192,4 +195,24 @@ function generateIceCandidate(event) {
     console.log("Sending a candidate: ", candidate);
     socket.emit("candidate", candidate);
   }
+}
+
+function base64toBlob(base64Data, contentType = "", sliceSize = 512) {
+  const byteCharacters = atob(base64Data.split(",")[1]);
+  const byteArrays = [];
+
+  for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+    const slice = byteCharacters.slice(offset, offset + sliceSize);
+
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+
+  const blob = new Blob(byteArrays, { type: contentType });
+  return blob;
 }
