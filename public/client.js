@@ -56,8 +56,15 @@ socket.on("local-file", fileData => {
     // Display the local video file stream
     const blob = base64toBlob(fileData.data);
     const blobUrl = URL.createObjectURL(blob);
-    
-    client.src = blobUrl;
+
+    // Create a new video element for the local file
+    const localVideo = document.createElement("video");
+    localVideo.src = blobUrl;
+    localVideo.autoplay = true;
+    localVideo.controls = true;
+
+    // Append the new video element to the document
+    document.body.appendChild(localVideo);
   }
 });
 
