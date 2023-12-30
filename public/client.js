@@ -3,7 +3,8 @@ var dashboard = document.querySelector("#dashboard"),
   client = document.querySelector("#client"),
   connect = document.querySelector("#connect"),
   guest = document.querySelector("#guest"),
-  hangUp = document.querySelector("#hang-up");
+  hangUp = document.querySelector("#hang-up"),
+  fileInput = document.querySelector("#file");
 
 const iceServers = {
   iceServers: [
@@ -17,7 +18,6 @@ const socket = io("https://webrtcappm-cf49c223a6aa.herokuapp.com");
 var localeStream;
 var isSource = false;
 
-// Log RTCPeerConnection state changes
 pc.addEventListener('iceconnectionstatechange', () => {
   console.log('ICE connection state:', pc.iceConnectionState);
 });
@@ -35,27 +35,41 @@ hangUp.onclick = function (e) {
 };
 
 connect.onclick = function () {
-  // Trigger "start-streaming" event when the "Start Streaming" button is clicked
+  fileInput.addEventListener("change", (event) => {
+    const file = event.target.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/upload", {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("File uploaded:", data.fileName);
+      })
+      .catch((error) => {
+        console.error("Error uploading file:", error);
+      });
+  });
+
   socket.emit("start-streaming");
   dashboard.style.display = "none";
   stream.style.display = "block";
-  isSource = true; // Set the user as the source
+  isSource = true;
 };
 
 guest.onclick = function () {
-  // Trigger "receive-streaming" event when the "Receive Streaming" button is clicked
   socket.emit("receive-streaming");
   dashboard.style.display = "none";
   stream.style.display = "block";
 };
 
 socket.on("start-streaming", () => {
-  // get user media
   navigator.mediaDevices
     .getUserMedia({ video: true, audio: true })
     .then(async userStream => {
       if (isSource) {
-        // If the user is the source, display their own stream
         client.srcObject = userStream;
       }
       localeStream = userStream;
@@ -68,22 +82,22 @@ socket.on("start-streaming", () => {
 });
 
 socket.on("receive-streaming", () => {
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
+  if (fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    const fileURL = URL.createObjectURL(file);
 
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
+    client.src = fileURL;
+
+    if (isSource) {
+      const fileStream = fileInput.captureStream();
+      localeStream = new MediaStream([...fileStream.getTracks(), ...localeStream.getTracks()]);
+    }
+
+    try {
+      client.play();
+    } catch (err) {
+      console.error(err);
+    }
   }
 });
 
@@ -93,7 +107,6 @@ socket.on("offer", offer => {
     return;
   }
 
-  // Set up the PC for receiving streaming
   pc.ontrack = addRemoteMediaStream;
   pc.onicecandidate = generateIceCandidate;
 
@@ -135,7 +148,6 @@ socket.on("candidate", event => {
 
 function addRemoteMediaStream(event) {
   if (!isSource) {
-    // If the user is the receiver, display the remote stream
     client.srcObject = event.streams[0];
   }
 }
