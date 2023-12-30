@@ -55,6 +55,44 @@ receiveStreaming.onclick = function () {
   stream.style.display = "block";
 };
 
+socket.on("start-streaming", () => {
+  // get user media
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: true })
+    .then(async userStream => {
+      if (isSource) {
+        // If the user is the source, display their own stream
+        client.srcObject = userStream;
+      }
+      localeStream = userStream;
+      try {
+        client.play();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+});
+
+socket.on("receive-streaming", () => {
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
+  pc.addTrack(localeStream.getTracks()[0], localeStream);
+  pc.addTrack(localeStream.getTracks()[1], localeStream);
+
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
+});
+
 socket.on("offer", offer => {
   if (pc.signalingState !== "stable") {
     console.warn("Invalid signaling state for offer:", pc.signalingState);
