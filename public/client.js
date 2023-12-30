@@ -1,9 +1,9 @@
 var dashboard = document.querySelector("#dashboard"),
-  stream = document.querySelector("#stream"),
-  client = document.querySelector("#client"),
-  connect = document.querySelector("#connect"),
-  guest = document.querySelector("#guest"),
-  hangUp = document.querySelector("#hang-up");
+  stream = document.querySelector("#stream"),
+  client = document.querySelector("#client"),
+  connect = document.querySelector("#connect"),
+  guest = document.querySelector("#guest"),
+  hangUp = document.querySelector("#hang-up");
 
 const iceServers = {
   iceServers: [
@@ -11,62 +11,11 @@ const iceServers = {
   ]
 };
 
-const fileInput = document.querySelector("#file-input");
-const startStreamingButton = document.querySelector("#connect");
-const receiveStreamingButton = document.querySelector("#guest");
-const localFileButton = document.querySelector("#local-file");
-
 const pc = new RTCPeerConnection(iceServers);
 const socket = io("https://webrtcappm-cf49c223a6aa.herokuapp.com");
 
 var localeStream;
 var isSource = false;
-
-fileInput.addEventListener("change", handleFileInput);
-
-function handleFileInput(event) {
-  const file = event.target.files[0];
-
-  if (file) {
-    const reader = new FileReader();
-
-    reader.onload = function (e) {
-      const fileData = {
-        name: file.name,
-        type: file.type,
-        data: e.target.result,
-      };
-
-      socket.emit("local-file", fileData);
-    };
-
-    reader.readAsDataURL(file);
-  }
-}
-
-localFileButton.addEventListener("click", () => {
-  socket.emit("local-file", "start-local-streaming");
-});
-
-socket.on("local-file", fileData => {
-  if (fileData === "start-local-streaming") {
-    // Trigger "start-streaming" event when the "Start Local Streaming" button is clicked
-    socket.emit("start-streaming");
-  } else {
-    // Display the local video file stream
-    const blob = base64toBlob(fileData.data);
-    const blobUrl = URL.createObjectURL(blob);
-
-    // Create a new video element for the local file
-    const localVideo = document.createElement("video");
-    localVideo.src = blobUrl;
-    localVideo.autoplay = true;
-    localVideo.controls = true;
-
-    // Append the new video element to the document
-    document.body.appendChild(localVideo);
-  }
-});
 
 // Log RTCPeerConnection state changes
 pc.addEventListener('iceconnectionstatechange', () => {
@@ -108,15 +57,13 @@ socket.on("start-streaming", () => {
       if (isSource) {
         // If the user is the source, display their own stream
         client.srcObject = userStream;
-
-        try {
-          // Use play method instead of client.play()
-          await client.play();
-        } catch (err) {
-          console.error(err);
-        }
       }
       localeStream = userStream;
+      try {
+        client.play();
+      } catch (err) {
+        console.error(err);
+      }
     });
 });
 
@@ -204,24 +151,4 @@ function generateIceCandidate(event) {
     console.log("Sending a candidate: ", candidate);
     socket.emit("candidate", candidate);
   }
-}
-
-function base64toBlob(base64Data, contentType = "", sliceSize = 512) {
-  const byteCharacters = atob(base64Data.split(",")[1]);
-  const byteArrays = [];
-
-  for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-    const slice = byteCharacters.slice(offset, offset + sliceSize);
-
-    const byteNumbers = new Array(slice.length);
-    for (let i = 0; i < slice.length; i++) {
-      byteNumbers[i] = slice.charCodeAt(i);
-    }
-
-    const byteArray = new Uint8Array(byteNumbers);
-    byteArrays.push(byteArray);
-  }
-
-  const blob = new Blob(byteArrays, { type: contentType });
-  return blob;
 }
