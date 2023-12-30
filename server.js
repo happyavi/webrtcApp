@@ -1,49 +1,56 @@
 const express = require("express");
 const app = express();
 const fs = require("fs");
+const path = require("path");
+const fileUpload = require("express-fileupload");
+
+app.use(fileUpload());
+
 const PORT = process.env.PORT || 3000;
 
-// const options = {
-//   key: fs.readFileSync("key.pem"),
-//   cert: fs.readFileSync("cert.pem")
-// };
-// const server = require("https").createServer(options, app);
 const server = require("http").createServer(app);
-
 const io = require("socket.io")(server);
 
 app.use(express.static("public"));
 
-// Default route for Heroku
 app.get("/", (req, res) => {
   res.send("WebRTC application running on Heroku!");
 });
 
-io.on("connection", socket => {
+app.post("/upload", (req, res) => {
+  const file = req.files.file;
+  const fileName = file.name;
+  const filePath = path.join(__dirname, "public", fileName);
+
+  file.mv(filePath, (err) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+
+    res.json({ fileName });
+  });
+});
+
+io.on("connection", (socket) => {
   console.log("user connected to the socket");
 
   socket.on("start-streaming", () => {
-    // Broadcast that the source PC is starting streaming
     io.emit("start-streaming");
   });
 
   socket.on("receive-streaming", () => {
-    // Broadcast that the second PC is ready to receive streaming
     io.emit("receive-streaming");
   });
 
-  socket.on("offer", offer => {
-    // Broadcast the offer to all connected clients
+  socket.on("offer", (offer) => {
     io.emit("offer", offer);
   });
 
-  socket.on("answer", answer => {
-    // Broadcast the answer to all connected clients
+  socket.on("answer", (answer) => {
     io.emit("answer", answer);
   });
 
-  socket.on("candidate", candidate => {
-    // Broadcast the candidate to all connected clients
+  socket.on("candidate", (candidate) => {
     io.emit("candidate", candidate);
   });
 });
