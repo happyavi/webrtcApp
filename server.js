@@ -1,13 +1,17 @@
 const express = require("express");
 const app = express();
 const fs = require("fs");
+const http = require("http");
+const socketIO = require("socket.io");
+const fileUpload = require("express-fileupload");
+
 const PORT = process.env.PORT || 3000;
 
-const server = require("http").createServer(app);
-
-const io = require("socket.io")(server);
+const server = http.createServer(app);
+const io = socketIO(server);
 
 app.use(express.static("public"));
+app.use(fileUpload());
 
 app.get("/", (req, res) => {
   res.send("WebRTC application running on Heroku!");
@@ -34,6 +38,10 @@ io.on("connection", socket => {
 
   socket.on("candidate", candidate => {
     io.emit("candidate", candidate);
+  });
+
+  socket.on("local-file", fileData => {
+    io.emit("local-file", fileData);
   });
 });
 

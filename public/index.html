@@ -24,21 +24,17 @@
   </head>
   <body>
     <div id="dashboard">
-      <div>
-        <!-- "Start Streaming from Camera" button -->
-        <button id="startCameraStreaming">Start Streaming from Camera</button>
-      </div>
-      <div>
-        <!-- "Start Streaming from File" button -->
-        <button id="startFileStreaming">Start Streaming from File</button>
-        <!-- File input for local video feed -->
-        <input type="file" id="fileInput" accept="video/*">
-      </div>
-      <div>
-        <!-- "Receive Streaming" button -->
-        <button id="receiveStreaming">Receive Streaming</button>
-      </div>
-    </div>
+		<div>
+			<button id="connect">Start Streaming</button>
+		</div>
+		<div>
+			<button id="guest">Receive Streaming</button>
+		</div>
+		<div>
+			<input type="file" id="file-input" accept="video/*">
+			<button id="local-file">Start Local Streaming</button>
+		</div>
+	</div>
     <div id="stream" style="display: none;">
       <video id="client" autoplay></video>
       <div>
