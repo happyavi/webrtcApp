@@ -65,21 +65,31 @@ guest.onclick = function () {
   stream.style.display = "block";
 };
 
-socket.on("start-streaming", () => {
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then(async userStream => {
-      if (isSource) {
-        client.srcObject = userStream;
-      }
-      localeStream = userStream;
-      try {
-        client.play();
-      } catch (err) {
-        console.error(err);
-      }
-    });
-});
+connect.onclick = function () {
+  fileInput.addEventListener("change", (event) => {
+    const file = event.target.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/upload", {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("File uploaded:", data.fileName);
+        socket.emit("start-streaming", data.fileName);
+      })
+      .catch((error) => {
+        console.error("Error uploading file:", error);
+      });
+  });
+
+  socket.emit("start-streaming");
+  dashboard.style.display = "none";
+  stream.style.display = "block";
+  isSource = true;
+};
 
 socket.on("receive-streaming", () => {
   if (fileInput.files.length > 0) {
