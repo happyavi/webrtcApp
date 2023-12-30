@@ -101,13 +101,15 @@ socket.on("start-streaming", () => {
       if (isSource) {
         // If the user is the source, display their own stream
         client.srcObject = userStream;
+
+        try {
+          // Use play method instead of client.play()
+          await client.play();
+        } catch (err) {
+          console.error(err);
+        }
       }
       localeStream = userStream;
-      try {
-        client.play();
-      } catch (err) {
-        console.error(err);
-      }
     });
 });
 
