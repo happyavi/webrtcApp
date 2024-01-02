@@ -7,11 +7,14 @@ var dashboard = document.querySelector("#dashboard"),
 
 const iceServers = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "turn:turn.l.google.com:19305?transport=udp" },
+    { urls: "turn:turn.l.google.com:19305?transport=tcp" },
   ]
 };
 
 const pc = new RTCPeerConnection(iceServers);
+
 const socket = io("https://webrtcappm-cf49c223a6aa.herokuapp.com");
 
 var localeStream;
