@@ -78,6 +78,7 @@ function initializeConnectionWithStunServers(index) {
   };
 
   pc.setConfiguration({ iceServers });
+}
 
 socket.on("start-streaming", () => {
     navigator.mediaDevices
@@ -180,3 +181,5 @@ function generateIceCandidate(event) {
     socket.emit("candidate", candidate);
   }
 }
+
+initializeConnectionWithStunServers(0); // Call the function to initialize with the first STUN server
