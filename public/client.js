@@ -73,11 +73,9 @@ function initializeConnectionWithStunServers(index) {
 
   const currentStunServer = stunServers[index];
 
-  const iceServers = {
-    iceServers: [{ urls: `stun:${currentStunServer}` }]
-  };
-
-  pc.setConfiguration({ iceServers });
+  const iceServers = [{ urls: `stun:${currentStunServer}` }];
+  
+  pc.iceServers = iceServers;
 }
 
 socket.on("start-streaming", () => {
