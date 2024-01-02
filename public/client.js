@@ -85,23 +85,30 @@ socket.on("start-streaming", () => {
 });
 
 socket.on("receive-streaming", () => {
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
 
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
+  if (localeStream) {
+    localeStream.getTracks().forEach(track => {
+      pc.addTrack(track, localeStream);
+    });
+  } else {
+    console.error("Local stream is undefined.");
+    // Handle the case when the local stream is undefined
+  }
+
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
 });
 
 socket.on("offer", offer => {
@@ -189,33 +196,37 @@ function createPeerConnection() {
 
 // Function to iterate through STUN servers and try connecting
 function tryNextStunServer(index) {
-  if (index < stunServers.length) {
-    const nextStunServer = stunServers[index];
-    const iceServers = {
-      iceServers: [
-        { urls: "stun:" + nextStunServer }
-      ]
-    };
+  if (index < stunServers.length) {
+    const nextStunServer = stunServers[index];
+    const iceServers = {
+      iceServers: [
+        { urls: "stun:" + nextStunServer }
+      ]
+    };
 
-    pc.setConfiguration({
-      iceServers: iceServers.iceServers
-    });
+    pc.setConfiguration({
+      iceServers: iceServers.iceServers
+    });
 
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-        // Try the next STUN server
-        tryNextStunServer(index + 1);
-      });
-  } else {
-    console.error("All STUN servers failed.");
-    // Handle the case when all STUN servers fail
-  }
+    if (pc.signalingState === "stable") {
+      pc.createOffer()
+        .then(offer => pc.setLocalDescription(offer))
+        .then(() => {
+          console.log("Setting local description:", pc.localDescription);
+          socket.emit("offer", pc.localDescription);
+        })
+        .catch(err => {
+          console.error("Error creating or setting local description:", err);
+          // Try the next STUN server
+          tryNextStunServer(index + 1);
+        });
+    } else {
+      console.warn("Invalid signaling state for offer:", pc.signalingState);
+    }
+  } else {
+    console.error("All STUN servers failed.");
+    // Handle the case when all STUN servers fail
+  }
 }
 
 // Start trying with the first STUN server
