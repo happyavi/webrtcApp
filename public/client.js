@@ -102,23 +102,23 @@ function tryNextStunServer(index) {
     console.log(`Trying next STUN server: ${nextServer}`);
     pc.setConfiguration({ iceServers: nextIceServers.iceServers });
     pc.createOffer()
-      .then(offer => pc.setRemoteDescription(new RTCSessionDescription(offer)))
-      .then(() => pc.createAnswer())
-      .then(answer => pc.setLocalDescription(answer))
+      .then(offer => pc.setLocalDescription(offer))
       .then(() => {
-        console.log("Setting local and remote descriptions");
+        console.log("Setting local description:", pc.localDescription);
         socket.emit("offer", pc.localDescription);
       })
       .catch(err => {
-        console.error(`Error creating or setting local/remote descriptions for ${nextServer}:`, err);
+        console.error(`Error creating or setting local description for ${nextServer}:`, err);
         tryNextStunServer(nextServerIndex);
       });
   } else {
     console.error("All STUN servers failed");
     // Handle the case where all STUN servers failed
+    // For example, display an error message to the user
   }
 }
 
+// Initial attempt with the first STUN server
 socket.on("receive-streaming", () => {
   // Set up the PC for receiving streaming
   pc.ontrack = addRemoteMediaStream;
@@ -127,15 +127,7 @@ socket.on("receive-streaming", () => {
   pc.addTrack(localeStream.getTracks()[1], localeStream);
 
   if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
+    tryNextStunServer(0);
   }
 });
 
