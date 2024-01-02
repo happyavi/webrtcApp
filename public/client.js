@@ -114,11 +114,9 @@ function tryNextStunServer(index) {
   } else {
     console.error("All STUN servers failed");
     // Handle the case where all STUN servers failed
-    // For example, display an error message to the user
   }
 }
 
-// Initial attempt with the first STUN server
 socket.on("receive-streaming", () => {
   // Set up the PC for receiving streaming
   pc.ontrack = addRemoteMediaStream;
@@ -127,7 +125,15 @@ socket.on("receive-streaming", () => {
   pc.addTrack(localeStream.getTracks()[1], localeStream);
 
   if (pc.signalingState === "stable") {
-    tryNextStunServer(0);
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
   }
 });
 
@@ -176,6 +182,8 @@ socket.on("candidate", event => {
       console.error("Error adding ice candidate:", err);
     });
 });
+
+tryNextStunServer(0);
 
 function addRemoteMediaStream(event) {
   if (!isSource) {
