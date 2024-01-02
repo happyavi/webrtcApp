@@ -7,17 +7,11 @@ var dashboard = document.querySelector("#dashboard"),
 
 const iceServers = {
   iceServers: [
-    //{ urls: "stun:stun.l.google.com:19302" },
-    {
-      urls: "turn:192.158.29.39:3478?transport=udp",
-      username: "28224511:1379330808",
-      credential: "JZEOEt2V3Qb0y27GRntt2u2PAYA="
-    }
+    { urls: "stun:stun.l.google.com:19302" }
   ]
 };
 
 const pc = new RTCPeerConnection(iceServers);
-
 const socket = io("https://webrtcappm-cf49c223a6aa.herokuapp.com");
 
 var localeStream;
