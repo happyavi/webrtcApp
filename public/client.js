@@ -12,7 +12,7 @@ const iceServers = {
 };
 
 const pc = new RTCPeerConnection(iceServers);
-const socket = io();
+const socket = io("https://webrtcappm-cf49c223a6aa.herokuapp.com");
 
 var localeStream;
 var isSource = false;
@@ -50,83 +50,69 @@ guest.onclick = function () {
 };
 
 socket.on("start-streaming", () => {
-  // Check if audio is supported
-  const audioSupported = navigator.mediaDevices.getSupportedConstraints().audio;
-
-  // Specify constraints based on audio support
-  const constraints = {
-    video: true,
-    audio: audioSupported ? true : false,
-  };
-
-  navigator.mediaDevices.getUserMedia(constraints)
-    .then(async userStream => {
-      if (isSource) {
-        // If the user is the source, display their own stream
-        client.srcObject = userStream;
-      }
-      localeStream = userStream;
-      try {
-        client.play();
-      } catch (err) {
-        console.error(err);
-      }
-    })
-    .catch(error => {
-      console.error("Error accessing media devices:", error);
-      // Handle the error, e.g., show a message to the user or fallback to video-only
-    });
+  // get user media
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: true })
+    .then(async userStream => {
+      if (isSource) {
+        // If the user is the source, display their own stream
+        client.srcObject = userStream;
+      }
+      localeStream = userStream;
+      try {
+        client.play();
+      } catch (err) {
+        console.error(err);
+      }
+    });
 });
 
 socket.on("receive-streaming", () => {
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
+  pc.addTrack(localeStream.getTracks()[0], localeStream);
+  pc.addTrack(localeStream.getTracks()[1], localeStream);
 
-  // Add each track individually
-  localeStream.getTracks().forEach(track => {
-    pc.addTrack(track, localeStream);
-  });
-
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
 });
 
 socket.on("offer", offer => {
-  if (pc.signalingState !== "stable") {
-    console.warn("Invalid signaling state for offer:", pc.signalingState);
-    return;
-  }
+  if (pc.signalingState !== "stable") {
+    console.warn("Invalid signaling state for offer:", pc.signalingState);
+    return;
+  }
 
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
 
-  pc.setRemoteDescription(new RTCSessionDescription(offer))
-    .then(() => {
-      if (pc.signalingState === "have-remote-offer") {
-        return pc.createAnswer();
-      }
-    })
-    .then(description => pc.setLocalDescription(description))
-    .then(() => {
-      if (pc.localDescription) {
-        console.log("Setting local description", pc.localDescription);
-        socket.emit("answer", pc.localDescription);
-      }
-    })
-    .catch(err => {
-      console.error("Error setting remote description or creating local description:", err);
-    });
+  pc.setRemoteDescription(new RTCSessionDescription(offer))
+    .then(() => {
+      if (pc.signalingState === "have-remote-offer") {
+        return pc.createAnswer();
+      }
+    })
+    .then(description => pc.setLocalDescription(description))
+    .then(() => {
+      if (pc.localDescription) {
+        console.log("Setting local description", pc.localDescription);
+        socket.emit("answer", pc.localDescription);
+      }
+    })
+    .catch(err => {
+      console.error("Error setting remote description or creating local description:", err);
+    });
 });
 
 socket.on("answer", answer => {
