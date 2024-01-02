@@ -120,34 +120,38 @@ socket.on("offer", offer => {
       const iceServers = {
         iceServers: [{ urls: `stun:${server}` }],
       };
-      const pc = new RTCPeerConnection(iceServers);
+      const tempPC = new RTCPeerConnection(iceServers);
 
-      pc.ontrack = addRemoteMediaStream;
-      pc.onicecandidate = generateIceCandidate;
+      tempPC.ontrack = addRemoteMediaStream;
+      tempPC.onicecandidate = generateIceCandidate;
 
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      await tempPC.setRemoteDescription(new RTCSessionDescription(offer));
 
-      if (pc.signalingState === "have-remote-offer") {
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.emit("answer", pc.localDescription);
+      if (tempPC.signalingState === "stable") {
+        const answer = await tempPC.createAnswer();
+        await tempPC.setLocalDescription(answer);
+        socket.emit("answer", tempPC.localDescription);
         console.log("Successfully connected using STUN server:", server);
+        return;
+      } else {
+        console.warn("Invalid signaling state for answer:", tempPC.signalingState);
       }
     } catch (error) {
       console.error(`Failed to connect using STUN server ${servers[index]}:`, error);
+    }
 
-      // Try the next STUN server
-      if (index + 1 < servers.length) {
-        tryStunServers(servers, index + 1);
-      } else {
-        console.error("Failed to connect using all STUN servers");
-      }
+    // Try the next STUN server
+    if (index + 1 < servers.length) {
+      tryStunServers(servers, index + 1);
+    } else {
+      console.error("Failed to connect using all STUN servers");
     }
   };
 
   // Start trying STUN servers
   tryStunServers(stunServers);
 });
+
 
 socket.on("answer", answer => {
   pc.setRemoteDescription(new RTCSessionDescription(answer)).catch(err => {
