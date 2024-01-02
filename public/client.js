@@ -24,10 +24,14 @@ const stunServers = [
   "stun.voipbuster.com",
   "stun.voipstunt.com",
   "stun.voxgratia.org",
-  "stun.xten.com"
+  "stun.xten.com",
 ];
 
-const pc = new RTCPeerConnection();
+const iceServers = {
+  iceServers: stunServers.map(server => ({ urls: `stun:${server}` })),
+};
+
+const pc = new RTCPeerConnection(iceServers);
 const socket = io("https://webrtcappm-cf49c223a6aa.herokuapp.com");
 
 var localeStream;
@@ -65,123 +69,118 @@ guest.onclick = function () {
   stream.style.display = "block";
 };
 
-function initializeConnectionWithStunServers(index) {
-  if (index >= stunServers.length) {
-    console.error("Unable to connect to any STUN server.");
-    return;
-  }
-
-  const currentStunServer = stunServers[index];
-
-  const iceServers = [{ urls: `stun:${currentStunServer}` }];
-  
-  pc.iceServers = iceServers;
-}
-
 socket.on("start-streaming", () => {
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then(async (userStream) => {
-        if (isSource) {
-          client.srcObject = userStream;
-        }
-        localeStream = userStream;
-        try {
-          client.play();
-        } catch (err) {
-          console.error(err);
-        }
-      });
-  });
-
-socket.on("receive-streaming", () => {
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
-
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
+  // get user media
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: true })
+    .then(async userStream => {
+      if (isSource) {
+        // If the user is the source, display their own stream
+        client.srcObject = userStream;
+      }
+      localeStream = userStream;
+      try {
+        client.play();
+      } catch (err) {
+        console.error(err);
+      }
+    });
 });
 
+socket.on("receive-streaming", () => {
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
+
+  // Add each track individually
+  localeStream.getTracks().forEach(track => {
+    pc.addTrack(track, localeStream);
+  });
+
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
+});
+
+// Add an event listener for the "offer" event
 socket.on("offer", offer => {
-  if (pc.signalingState !== "stable") {
-    console.warn("Invalid signaling state for offer:", pc.signalingState);
-    return;
-  }
+  // Function to attempt connecting with multiple STUN servers
+  const tryStunServers = async (servers, index = 0) => {
+    try {
+      const server = servers[index];
+      console.log(`Trying STUN server: ${server}`);
+      const iceServers = {
+        iceServers: [{ urls: `stun:${server}` }],
+      };
+      const pc = new RTCPeerConnection(iceServers);
 
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
+      pc.ontrack = addRemoteMediaStream;
+      pc.onicecandidate = generateIceCandidate;
 
-  const remoteDescription = new RTCSessionDescription(offer);
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
-  if (pc.signalingState === "have-remote-offer" || pc.signalingState === "stable") {
-    pc.setRemoteDescription(remoteDescription)
-      .then(() => {
-        if (pc.signalingState === "have-remote-offer") {
-          return pc.createAnswer();
-        }
-      })
-      .then(description => pc.setLocalDescription(description))
-      .then(() => {
-        if (pc.localDescription) {
-          console.log("Setting local description", pc.localDescription);
-          socket.emit("answer", pc.localDescription);
-        }
-      })
-      .catch(err => {
-        console.error("Error setting remote description or creating local description:", err);
-      });
-  }
+      if (pc.signalingState === "have-remote-offer") {
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.emit("answer", pc.localDescription);
+        console.log("Successfully connected using STUN server:", server);
+      }
+    } catch (error) {
+      console.error(`Failed to connect using STUN server ${servers[index]}:`, error);
+
+      // Try the next STUN server
+      if (index + 1 < servers.length) {
+        tryStunServers(servers, index + 1);
+      } else {
+        console.error("Failed to connect using all STUN servers");
+      }
+    }
+  };
+
+  // Start trying STUN servers
+  tryStunServers(stunServers);
 });
 
 socket.on("answer", answer => {
-  pc.setRemoteDescription(new RTCSessionDescription(answer))
-    .catch(err => {
-      console.error("Error setting remote description:", err);
-    });
+  pc.setRemoteDescription(new RTCSessionDescription(answer)).catch(err => {
+    console.error("Error setting remote description:", err);
+  });
 });
 
 socket.on("candidate", event => {
-  var iceCandidate = new RTCIceCandidate({
-    sdpMLineIndex: event.label,
-    candidate: event.candidate
-  });
-  pc.addIceCandidate(iceCandidate)
-    .catch(err => {
-      console.error("Error adding ice candidate:", err);
-    });
+  var iceCandidate = new RTCIceCandidate({
+    sdpMLineIndex: event.label,
+    candidate: event.candidate,
+  });
+  pc.addIceCandidate(iceCandidate).catch(err => {
+    console.error("Error adding ice candidate:", err);
+  });
 });
 
 function addRemoteMediaStream(event) {
-  if (!isSource) {
-    // If the user is the receiver, display the remote stream
-    client.srcObject = event.streams[0];
-  }
+  if (!isSource) {
+    // If the user is the receiver, display the remote stream
+    client.srcObject = event.streams[0];
+  }
 }
 
 function generateIceCandidate(event) {
-  if (event.candidate) {
-    var candidate = {
-      type: "candidate",
-      label: event.candidate.sdpMLineIndex,
-      id: event.candidate.sdpMid,
-      candidate: event.candidate.candidate
-    };
-    console.log("Sending a candidate: ", candidate);
-    socket.emit("candidate", candidate);
-  }
+  if (event.candidate) {
+    var candidate = {
+      type: "candidate",
+      label: event.candidate.sdpMLineIndex,
+      id: event.candidate.sdpMid,
+      candidate: event.candidate.candidate,
+    };
+    console.log("Sending a candidate: ", candidate);
+    socket.emit("candidate", candidate);
+  }
 }
-
-initializeConnectionWithStunServers(0); // Call the function to initialize with the first STUN server
