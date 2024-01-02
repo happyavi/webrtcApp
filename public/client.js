@@ -50,41 +50,55 @@ guest.onclick = function () {
 };
 
 socket.on("start-streaming", () => {
-  // get user media
-  navigator.mediaDevices
-    .getUserMedia({ video: true })
-    .then(async userStream => {
-      if (isSource) {
-        // If the user is the source, display their own stream
-        client.srcObject = userStream;
-      }
-      localeStream = userStream;
-      try {
-        client.play();
-      } catch (err) {
-        console.error(err);
-      }
-    });
+  // Check if audio is supported
+  const audioSupported = navigator.mediaDevices.getSupportedConstraints().audio;
+
+  // Specify constraints based on audio support
+  const constraints = {
+    video: true,
+    audio: audioSupported ? true : false,
+  };
+
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(async userStream => {
+      if (isSource) {
+        // If the user is the source, display their own stream
+        client.srcObject = userStream;
+      }
+      localeStream = userStream;
+      try {
+        client.play();
+      } catch (err) {
+        console.error(err);
+      }
+    })
+    .catch(error => {
+      console.error("Error accessing media devices:", error);
+      // Handle the error, e.g., show a message to the user or fallback to video-only
+    });
 });
 
 socket.on("receive-streaming", () => {
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
 
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
+  // Add each track individually
+  localeStream.getTracks().forEach(track => {
+    pc.addTrack(track, localeStream);
+  });
+
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
 });
 
 socket.on("offer", offer => {
