@@ -102,13 +102,15 @@ function tryNextStunServer(index) {
     console.log(`Trying next STUN server: ${nextServer}`);
     pc.setConfiguration({ iceServers: nextIceServers.iceServers });
     pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
+      .then(offer => pc.setRemoteDescription(new RTCSessionDescription(offer)))
+      .then(() => pc.createAnswer())
+      .then(answer => pc.setLocalDescription(answer))
       .then(() => {
-        console.log("Setting local description:", pc.localDescription);
+        console.log("Setting local and remote descriptions");
         socket.emit("offer", pc.localDescription);
       })
       .catch(err => {
-        console.error(`Error creating or setting local description for ${nextServer}:`, err);
+        console.error(`Error creating or setting local/remote descriptions for ${nextServer}:`, err);
         tryNextStunServer(nextServerIndex);
       });
   } else {
