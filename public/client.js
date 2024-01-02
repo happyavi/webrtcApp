@@ -102,31 +102,31 @@ socket.on("receive-streaming", () => {
 });
 
 socket.on("offer", offer => {
-  if (pc.signalingState !== "stable") {
-    console.warn("Invalid signaling state for offer:", pc.signalingState);
-    return;
-  }
+  if (pc.signalingState !== "stable") {
+    console.warn("Invalid signaling state for offer:", pc.signalingState);
+    return;
+  }
 
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
 
-  pc.setRemoteDescription(new RTCSessionDescription(offer))
-    .then(() => {
-      if (pc.signalingState === "have-remote-offer") {
-        return pc.createAnswer();
-      }
-    })
-    .then(description => pc.setLocalDescription(description))
-    .then(() => {
-      if (pc.localDescription) {
-        console.log("Setting local description", pc.localDescription);
-        socket.emit("answer", pc.localDescription);
-      }
-    })
-    .catch(err => {
-      console.error("Error setting remote description or creating local description:", err);
-    });
+  pc.setRemoteDescription(new RTCSessionDescription(offer))
+    .then(() => {
+      if (pc.signalingState === "have-remote-offer") {
+        return pc.createAnswer();
+      }
+    })
+    .then(description => pc.setLocalDescription(description))
+    .then(() => {
+      if (pc.localDescription) {
+        console.log("Setting local description", pc.localDescription);
+        socket.emit("answer", pc.localDescription);
+      }
+    })
+    .catch(err => {
+      console.error("Error setting remote description or creating local description:", err);
+    });
 });
 
 socket.on("answer", answer => {
