@@ -124,22 +124,26 @@ socket.on("offer", offer => {
   pc.ontrack = addRemoteMediaStream;
   pc.onicecandidate = generateIceCandidate;
 
-  pc.setRemoteDescription(new RTCSessionDescription(offer))
-    .then(() => {
-      if (pc.signalingState === "have-remote-offer") {
-        return pc.createAnswer();
-      }
-    })
-    .then(description => pc.setLocalDescription(description))
-    .then(() => {
-      if (pc.localDescription) {
-        console.log("Setting local description", pc.localDescription);
-        socket.emit("answer", pc.localDescription);
-      }
-    })
-    .catch(err => {
-      console.error("Error setting remote description or creating local description:", err);
-    });
+  const remoteDescription = new RTCSessionDescription(offer);
+
+  if (pc.signalingState === "have-remote-offer" || pc.signalingState === "stable") {
+    pc.setRemoteDescription(remoteDescription)
+      .then(() => {
+        if (pc.signalingState === "have-remote-offer") {
+          return pc.createAnswer();
+        }
+      })
+      .then(description => pc.setLocalDescription(description))
+      .then(() => {
+        if (pc.localDescription) {
+          console.log("Setting local description", pc.localDescription);
+          socket.emit("answer", pc.localDescription);
+        }
+      })
+      .catch(err => {
+        console.error("Error setting remote description or creating local description:", err);
+      });
+  }
 });
 
 socket.on("answer", answer => {
