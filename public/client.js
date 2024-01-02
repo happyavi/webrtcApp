@@ -7,9 +7,12 @@ var dashboard = document.querySelector("#dashboard"),
 
 const iceServers = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "turn:turn.l.google.com:19305?transport=udp" },
-    { urls: "turn:turn.l.google.com:19305?transport=tcp" },
+    //{ urls: "stun:stun.l.google.com:19302" },
+    {
+      urls: "turn:turn.anyfirewall.com:443?transport=tcp",
+      username: "webrtc",
+      credential: "webrtc"
+    }
   ]
 };
 
