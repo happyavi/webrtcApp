@@ -138,12 +138,21 @@ function addRemoteMediaStream(event) {
     // If the user is the receiver, display the remote stream
     const remoteStream = new MediaStream(event.streams);
     client.srcObject = remoteStream;
-    
-    // Add the following code to send the remote stream to the virtual camera
+
+    // Get the remote video track
     const remoteVideoTrack = remoteStream.getVideoTracks()[0];
-    const remoteSender = pc.getSenders().find(sender => sender.track === remoteVideoTrack);
-    const remoteStreamClone = remoteStream.clone();
-    remoteSender.replaceTrack(remoteStreamClone.getVideoTracks()[0]);
+
+    // Find or add a video sender to the RTCPeerConnection
+    const senders = pc.getSenders();
+    const videoSender = senders.find(sender => sender.track.kind === 'video');
+
+    if (videoSender) {
+      // If a video sender exists, replace its track with the remote video track
+      videoSender.replaceTrack(remoteVideoTrack);
+    } else {
+      // If no video sender exists, add a new one with the remote video track
+      pc.addTrack(remoteVideoTrack, remoteStream);
+    }
   }
 }
 
