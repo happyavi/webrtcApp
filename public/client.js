@@ -134,10 +134,17 @@ socket.on("candidate", event => {
 });
 
 function addRemoteMediaStream(event) {
-  if (!isSource) {
-    // If the user is the receiver, display the remote stream
-    client.srcObject = event.streams[0];
-  }
+  if (!isSource) {
+    // If the user is the receiver, display the remote stream
+    const remoteStream = new MediaStream(event.streams);
+    client.srcObject = remoteStream;
+    
+    // Add the following code to send the remote stream to the virtual camera
+    const remoteVideoTrack = remoteStream.getVideoTracks()[0];
+    const remoteSender = pc.getSenders().find(sender => sender.track === remoteVideoTrack);
+    const remoteStreamClone = remoteStream.clone();
+    remoteSender.replaceTrack(remoteStreamClone.getVideoTracks()[0]);
+  }
 }
 
 function generateIceCandidate(event) {
