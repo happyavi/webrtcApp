@@ -49,22 +49,45 @@ guest.onclick = function () {
   stream.style.display = "block";
 };
 
+async function setUpVirtualCamera(stream) {
+  try {
+    const videoTracks = stream.getVideoTracks();
+    const mediaSource = new MediaSource();
+    const mediaStreamTrack = mediaSource
+      .addTrack(videoTracks[0])
+      .addTrack(videoTracks[1]);
+
+    const virtualCameraStream = new MediaStream([mediaStreamTrack]);
+
+    // Use the virtual camera stream
+    await ManyCam.useVideo(virtualCameraStream);
+
+    console.log("Virtual camera set up successfully");
+  } catch (error) {
+    console.error("Error setting up virtual camera:", error);
+  }
+}
+
 socket.on("start-streaming", () => {
-  // get user media
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then(async userStream => {
-      if (isSource) {
-        // If the user is the source, display their own stream
-        client.srcObject = userStream;
-      }
-      localeStream = userStream;
-      try {
-        client.play();
-      } catch (err) {
-        console.error(err);
-      }
-    });
+  // get user media
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: true })
+    .then(async userStream => {
+      if (isSource) {
+        // If the user is the source, display their own stream
+        client.srcObject = userStream;
+      }
+      localeStream = userStream;
+
+      // Set up the virtual camera
+      await setUpVirtualCamera(localeStream);
+
+      try {
+        client.play();
+      } catch (err) {
+        console.error(err);
+      }
+    });
 });
 
 socket.on("receive-streaming", () => {
