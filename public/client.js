@@ -49,15 +49,13 @@ guest.onclick = function () {
   stream.style.display = "block";
 };
 
+// Function to set up the virtual camera
 async function setUpVirtualCamera(stream) {
   try {
     const videoTracks = stream.getVideoTracks();
-    const mediaSource = new MediaSource();
-    const mediaStreamTrack = mediaSource
-      .addTrack(videoTracks[0])
-      .addTrack(videoTracks[1]);
+    const audioTracks = stream.getAudioTracks();
 
-    const virtualCameraStream = new MediaStream([mediaStreamTrack]);
+    const virtualCameraStream = new MediaStream([...videoTracks, ...audioTracks]);
 
     // Use the virtual camera stream
     await ManyCam.useVideo(virtualCameraStream);
