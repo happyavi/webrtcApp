@@ -49,63 +49,53 @@ guest.onclick = function () {
   stream.style.display = "block";
 };
 
-// Function to set up the virtual camera
-async function setUpVirtualCamera(stream) {
-  try {
-    const videoTracks = stream.getVideoTracks();
-    const audioTracks = stream.getAudioTracks();
-
-    const virtualCameraStream = new MediaStream([...videoTracks, ...audioTracks]);
-
-    // Use the virtual camera stream
-    await ManyCam.useVideo(virtualCameraStream);
-
-    console.log("Virtual camera set up successfully");
-  } catch (error) {
-    console.error("Error setting up virtual camera:", error);
-  }
-}
-
 socket.on("start-streaming", () => {
-  // get user media
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then(async userStream => {
-      if (isSource) {
-        // If the user is the source, display their own stream
-        client.srcObject = userStream;
-      }
-      localeStream = userStream;
-
-      // Set up the virtual camera
-      await setUpVirtualCamera(localeStream);
-
-      try {
-        client.play();
-      } catch (err) {
-        console.error(err);
-      }
-    });
+  // get user media
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: true })
+    .then(async userStream => {
+      if (isSource) {
+        // If the user is the source, display their own stream
+        client.srcObject = userStream;
+      }
+      localeStream = userStream;
+      try {
+        client.play();
+      } catch (err) {
+        console.error(err);
+      }
+    });
 });
 
 socket.on("receive-streaming", () => {
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
+    // Open a new browser window with the video stream URL
+    var newWindow = window.open("", "_blank", "width=640,height=480");
+    
+    // Set up the PC for receiving streaming
+    pc.ontrack = function(event) {
+        if (event.streams && event.streams[0]) {
+            // Display the remote stream in the new window
+            newWindow.document.body.innerHTML = '<video id="remoteVideo" autoplay></video>';
+            newWindow.document.getElementById("remoteVideo").srcObject = event.streams[0];
+        }
+    };
 
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
+    pc.onicecandidate = generateIceCandidate;
+    
+    pc.addTrack(localeStream.getTracks()[0], localeStream);
+    pc.addTrack(localeStream.getTracks()[1], localeStream);
+
+    if (pc.signalingState === "stable") {
+        pc.createOffer()
+            .then(offer => pc.setLocalDescription(offer))
+            .then(() => {
+                console.log("Setting local description:", pc.localDescription);
+                socket.emit("offer", pc.localDescription);
+            })
+            .catch(err => {
+                console.error("Error creating or setting local description:", err);
+            });
+    }
 });
 
 socket.on("offer", offer => {
