@@ -19,6 +19,12 @@ app.get("/", (req, res) => {
   res.send("WebRTC application running on Heroku!");
 });
 
+const videoStreamRoute = "/video-stream";  // Add a route for video streaming
+
+app.get(videoStreamRoute, (req, res) => {
+  res.sendFile(__dirname + "/public/video-stream.html");  // Create a separate HTML file for video streaming
+});
+
 io.on("connection", socket => {
   console.log("user connected to the socket");
 
@@ -28,8 +34,11 @@ io.on("connection", socket => {
   });
 
   socket.on("receive-streaming", () => {
-    // Broadcast that the second PC is ready to receive streaming
-    io.emit("receive-streaming");
+  // Broadcast that the second PC is ready to receive streaming
+  io.emit("receive-streaming");
+
+  // Open a new browser window with the video stream route
+  io.emit("open-video-stream", `${server.address().address}:${PORT}${videoStreamRoute}`);
   });
 
   socket.on("offer", offer => {

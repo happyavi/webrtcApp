@@ -16,6 +16,7 @@ const socket = io("https://webrtcappm-cf49c223a6aa.herokuapp.com");
 
 var localeStream;
 var isSource = false;
+let videoStreamWindow;
 
 // Log RTCPeerConnection state changes
 pc.addEventListener('iceconnectionstatechange', () => {
@@ -67,35 +68,27 @@ socket.on("start-streaming", () => {
     });
 });
 
-socket.on("receive-streaming", () => {
-    // Open a new browser window with the video stream URL
-    var newWindow = window.open("", "_blank", "width=640,height=480");
-    
-    // Set up the PC for receiving streaming
-    pc.ontrack = function(event) {
-        if (event.streams && event.streams[0]) {
-            // Display the remote stream in the new window
-            newWindow.document.body.innerHTML = '<video id="remoteVideo" autoplay></video>';
-            newWindow.document.getElementById("remoteVideo").srcObject = event.streams[0];
-        }
-    };
+socket.on("receive-streaming", (videoStreamURL) => {
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
+  pc.addTrack(localeStream.getTracks()[0], localeStream);
+  pc.addTrack(localeStream.getTracks()[1], localeStream);
 
-    pc.onicecandidate = generateIceCandidate;
-    
-    pc.addTrack(localeStream.getTracks()[0], localeStream);
-    pc.addTrack(localeStream.getTracks()[1], localeStream);
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
 
-    if (pc.signalingState === "stable") {
-        pc.createOffer()
-            .then(offer => pc.setLocalDescription(offer))
-            .then(() => {
-                console.log("Setting local description:", pc.localDescription);
-                socket.emit("offer", pc.localDescription);
-            })
-            .catch(err => {
-                console.error("Error creating or setting local description:", err);
-            });
-    }
+  // Open a new window with the video stream URL
+  videoStreamWindow = window.open(videoStreamURL, "Video Stream", "width=640, height=480");
 });
 
 socket.on("offer", offer => {
