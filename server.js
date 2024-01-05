@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 const fs = require("fs");
+const path = require("path");
+const { v4: uuidv4 } = require("uuid"); // Add this line to generate unique IDs
 const PORT = process.env.PORT || 3000;
 
 // const options = {
@@ -19,10 +21,10 @@ app.get("/", (req, res) => {
   res.send("WebRTC application running on Heroku!");
 });
 
-const videoStreamRoute = "/video-stream";  // Add a route for video streaming
-
-app.get(videoStreamRoute, (req, res) => {
-  res.sendFile(__dirname + "/public/video-stream.html");  // Create a separate HTML file for video streaming
+// Add a new route for handling video streaming
+app.get("/stream/:streamId", (req, res) => {
+  const streamId = req.params.streamId;
+  res.sendFile(path.join(__dirname, "public", "stream.html")); // Create a stream.html file in the "public" folder
 });
 
 io.on("connection", socket => {
@@ -34,11 +36,11 @@ io.on("connection", socket => {
   });
 
   socket.on("receive-streaming", () => {
-  // Broadcast that the second PC is ready to receive streaming
-  io.emit("receive-streaming");
+    const streamId = uuidv4(); // Generate a unique ID for the stream
+    io.emit("receive-streaming", streamId);
 
-  // Open a new browser window with the video stream route
-  io.emit("open-video-stream", `${server.address().address}:${PORT}${videoStreamRoute}`);
+    // Redirect the user to the streaming route with the unique ID
+    io.to(socket.id).emit("redirect", `/stream/${streamId}`);
   });
 
   socket.on("offer", offer => {
