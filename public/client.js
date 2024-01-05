@@ -70,25 +70,25 @@ socket.on("start-streaming", () => {
 
 socket.on("receive-streaming", (videoStreamURL) => {
   // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
+  pc.addTrack(localeStream.getTracks()[0], localeStream);
+  pc.addTrack(localeStream.getTracks()[1], localeStream);
 
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
 
   // Open a new window with the video stream URL
-  videoStreamWindow = window.open(videoStreamURL, "Video Stream", "width=640, height=480");
+  videoStreamWindow = window.open(videoStreamURL, "_blank", "width=640, height=480, resizable=yes, scrollbars=yes");
 });
 
 socket.on("offer", offer => {
