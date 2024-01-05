@@ -52,8 +52,20 @@ guest.onclick = function () {
 
 socket.on("start-streaming", () => {
   navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-    .then(stream => {
-      streamVideo.srcObject = stream;
+    .then(async userStream => {
+      if (isSource) {
+        // If the user is the source, display their own stream
+        client.srcObject = userStream;
+        localeStream = userStream;
+        try {
+          client.play();
+        } catch (err) {
+          console.error(err);
+        }
+      } else {
+        // If the user is the receiver, display the remote stream
+        streamVideo.srcObject = userStream;
+      }
     })
     .catch(error => {
       console.error("Error accessing media devices:", error);
