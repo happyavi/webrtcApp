@@ -93,13 +93,19 @@ socket.on("receive-streaming", () => {
 });
 
 document.querySelector("#guest").addEventListener("click", () => {
-  const iframe = document.createElement("iframe");
-  iframe.src = streamUrl;
-  iframe.width = "100%";
-  iframe.height = "100%";
   const modal = document.getElementById("modal");
-  modal.innerHTML = "";
-  modal.appendChild(iframe);
+  const videoContainer = document.getElementById("video-container");
+
+  // Clear previous content
+  videoContainer.innerHTML = "";
+
+  // Create video element
+  const videoElement = document.createElement("video");
+  videoElement.srcObject = streamUrl;
+  videoElement.autoplay = true;
+  videoContainer.appendChild(videoElement);
+
+  // Show the modal
   modal.style.display = "block";
 });
 
@@ -168,4 +174,9 @@ function generateIceCandidate(event) {
     console.log("Sending a candidate: ", candidate);
     socket.emit("candidate", candidate);
   }
+}
+
+function closeModal() {
+  const modal = document.getElementById("modal");
+  modal.style.display = "none";
 }
