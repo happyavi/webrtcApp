@@ -51,25 +51,6 @@ guest.onclick = function () {
 
 let streamUrl;
 
-socket.on("start-streaming", () => {
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then(async (userStream) => {
-      if (isSource) {
-        client.srcObject = userStream;
-      }
-      localeStream = userStream;
-
-      socket.emit("get-stream-url");
-
-      try {
-        await client.play();
-      } catch (err) {
-        console.error(err);
-      }
-    });
-});
-
 socket.on("stream-url", (url) => {
   streamUrl = url;
 });

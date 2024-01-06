@@ -21,6 +21,8 @@ io.on("connection", (socket) => {
 
   socket.on("receive-streaming", () => {
     io.emit("receive-streaming");
+    const streamUrl = `/stream/${socket.id}`;
+    io.to(socket.id).emit("stream-url", streamUrl);
   });
 
   socket.on("offer", (offer) => {
