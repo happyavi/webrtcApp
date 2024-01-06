@@ -93,71 +93,16 @@ socket.on("receive-streaming", () => {
 });
 
 document.querySelector("#guest").addEventListener("click", () => {
-  const newWindow = window.open("", "_blank");
-  newWindow.document.write(`
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Streaming</title>
-        <style>
-          body {
-            margin: 0;
-            overflow: hidden;
-          }
-          video {
-            width: 100%;
-            height: 100%;
-          }
-        </style>
-      </head>
-      <body>
-        <video autoplay id="stream"></video>
-        <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
-        <script>
-          const socket = io();
-          const streamVideo = document.getElementById("stream");
-
-          socket.on("offer", async (offer) => {
-            const pc = new RTCPeerConnection(iceServers);
-
-            pc.onicecandidate = (event) => {
-              if (event.candidate) {
-                socket.emit("candidate", {
-                  label: event.candidate.sdpMLineIndex,
-                  id: event.candidate.sdpMid,
-                  candidate: event.candidate.candidate,
-                });
-              }
-            };
-
-            pc.ontrack = (event) => {
-              streamVideo.srcObject = event.streams[0];
-            };
-
-            await pc.setRemoteDescription(offer);
-
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-
-            socket.emit("answer", pc.localDescription);
-          });
-
-          socket.on("candidate", (candidate) => {
-            const iceCandidate = new RTCIceCandidate({
-              sdpMLineIndex: candidate.label,
-              candidate: candidate.candidate,
-            });
-
-            pc.addIceCandidate(iceCandidate);
-          });
-        </script>
-      </body>
-    </html>
-  `);
-  window.open(streamUrl, "_blank");
+  const iframe = document.createElement("iframe");
+  iframe.src = streamUrl;
+  iframe.width = "100%";
+  iframe.height = "100%";
+  const modal = document.getElementById("modal");
+  modal.innerHTML = "";
+  modal.appendChild(iframe);
+  modal.style.display = "block";
 });
+
 
 socket.on("offer", offer => {
   if (pc.signalingState !== "stable") {
