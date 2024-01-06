@@ -92,7 +92,7 @@ socket.on("receive-streaming", () => {
   }
 });
 
-document.getElementById("receive-stream").addEventListener("click", () => {
+document.getElementById("receive-streaming").addEventListener("click", () => {
   window.open(streamUrl, "_blank");
 });
 
