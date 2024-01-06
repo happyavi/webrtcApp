@@ -16,7 +16,6 @@ const socket = io("https://webrtcappm-cf49c223a6aa.herokuapp.com");
 
 var localeStream;
 var isSource = false;
-const streamVideo = document.getElementById("streamVideo");
 
 // Log RTCPeerConnection state changes
 pc.addEventListener('iceconnectionstatechange', () => {
@@ -50,46 +49,52 @@ guest.onclick = function () {
   stream.style.display = "block";
 };
 
+let streamUrl;
+
 socket.on("start-streaming", () => {
-  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-    .then(async userStream => {
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: true })
+    .then(async (userStream) => {
       if (isSource) {
-        // If the user is the source, display their own stream
         client.srcObject = userStream;
-        localeStream = userStream;
-        try {
-          client.play();
-        } catch (err) {
-          console.error(err);
-        }
-      } else {
-        // If the user is the receiver, display the remote stream
-        streamVideo.srcObject = userStream;
       }
-    })
-    .catch(error => {
-      console.error("Error accessing media devices:", error);
+      localeStream = userStream;
+
+      socket.emit("get-stream-url");
+
+      try {
+        await client.play();
+      } catch (err) {
+        console.error(err);
+      }
     });
 });
 
-socket.on("receive-streaming", () => {
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
+socket.on("stream-url", (url) => {
+  streamUrl = url;
+});
 
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
+socket.on("receive-streaming", () => {
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
+  pc.addTrack(localeStream.getTracks()[0], localeStream);
+  pc.addTrack(localeStream.getTracks()[1], localeStream);
+
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then((offer) => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch((err) => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
+});
+
+document.getElementById("receive-stream").addEventListener("click", () => {
+  window.open(streamUrl, "_blank");
 });
 
 socket.on("offer", offer => {

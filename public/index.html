@@ -37,7 +37,10 @@
         <button id="hang-up">Hang up</button>
       </div>
     </div>
-    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
-    <script src="./client.js"></script>
+    <!-- Add this line to include the fetch API polyfill -->
+	<script src="https://unpkg.com/unfetch/dist/unfetch.umd.js"></script>
+	<script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+	<script src="./client.js"></script>
+
   </body>
 </html>
