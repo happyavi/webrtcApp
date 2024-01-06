@@ -55,6 +55,24 @@ socket.on("stream-url", (url) => {
   streamUrl = url;
 });
 
+socket.on("start-streaming", () => {
+  // get user media
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: true })
+    .then(async userStream => {
+      if (isSource) {
+        // If the user is the source, display their own stream
+        client.srcObject = userStream;
+      }
+      localeStream = userStream;
+      try {
+        client.play();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+});
+
 socket.on("receive-streaming", () => {
   pc.ontrack = addRemoteMediaStream;
   pc.onicecandidate = generateIceCandidate;
