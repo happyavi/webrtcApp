@@ -49,12 +49,6 @@ guest.onclick = function () {
   stream.style.display = "block";
 };
 
-let streamUrl;
-
-socket.on("stream-url", (url) => {
-  streamUrl = url;
-});
-
 socket.on("start-streaming", () => {
   // get user media
   navigator.mediaDevices
@@ -74,33 +68,23 @@ socket.on("start-streaming", () => {
 });
 
 socket.on("receive-streaming", () => {
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
+  pc.addTrack(localeStream.getTracks()[0], localeStream);
+  pc.addTrack(localeStream.getTracks()[1], localeStream);
 
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then((offer) => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch((err) => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
-});
-
-document.querySelector("#guest").addEventListener("click", () => {
-  const iframe = document.createElement("iframe");
-  iframe.src = streamUrl;
-  iframe.width = "100%";
-  iframe.height = "100%";
-  const modal = document.getElementById("modal");
-  modal.innerHTML = "";
-  modal.appendChild(iframe);
-  modal.style.display = "block";
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
 });
 
 socket.on("offer", offer => {
@@ -167,9 +151,4 @@ function generateIceCandidate(event) {
     console.log("Sending a candidate: ", candidate);
     socket.emit("candidate", candidate);
   }
-}
-
-function closeModal() {
-  const modal = document.getElementById("modal");
-  modal.style.display = "none";
 }

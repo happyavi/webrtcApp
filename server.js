@@ -1,51 +1,51 @@
 const express = require("express");
 const app = express();
 const fs = require("fs");
-const http = require("http");
-const server = http.createServer(app);
-const io = require("socket.io")(server);
 const PORT = process.env.PORT || 3000;
+
+// const options = {
+//   key: fs.readFileSync("key.pem"),
+//   cert: fs.readFileSync("cert.pem")
+// };
+// const server = require("https").createServer(options, app);
+const server = require("http").createServer(app);
+
+const io = require("socket.io")(server);
 
 app.use(express.static("public"));
 
+// Default route for Heroku
 app.get("/", (req, res) => {
   res.send("WebRTC application running on Heroku!");
 });
 
-io.on("connection", (socket) => {
+io.on("connection", socket => {
   console.log("user connected to the socket");
 
   socket.on("start-streaming", () => {
+    // Broadcast that the source PC is starting streaming
     io.emit("start-streaming");
   });
 
   socket.on("receive-streaming", () => {
+    // Broadcast that the second PC is ready to receive streaming
     io.emit("receive-streaming");
-    const streamUrl = `/stream/${socket.id}`;
-    io.to(socket.id).emit("stream-url", streamUrl);
   });
 
-  socket.on("offer", (offer) => {
+  socket.on("offer", offer => {
+    // Broadcast the offer to all connected clients
     io.emit("offer", offer);
   });
 
-  socket.on("answer", (answer) => {
+  socket.on("answer", answer => {
+    // Broadcast the answer to all connected clients
     io.emit("answer", answer);
   });
 
-  socket.on("candidate", (candidate) => {
+  socket.on("candidate", candidate => {
+    // Broadcast the candidate to all connected clients
     io.emit("candidate", candidate);
   });
-
-  socket.on("get-stream-url", () => {
-    const streamUrl = `/stream/${socket.id}`;
-    io.to(socket.id).emit("stream-url", streamUrl);
-  });
-});
-
-app.get("/stream/:id", (req, res) => {
-  const socketId = req.params.id;
-  res.sendFile(__dirname + "/public/stream.html");
 });
 
 server.listen(PORT, () => {
