@@ -22,20 +22,20 @@
 <body>
   <video id="remoteVideo" autoplay></video>
   <script>
+    const remoteVideo = document.getElementById("remoteVideo");
+    const pc = new RTCPeerConnection();
+
+    pc.ontrack = (event) => {
+      remoteVideo.srcObject = event.streams[0];
+    };
+
     window.addEventListener("message", (event) => {
       if (event.origin === "https://webrtcappm-cf49c223a6aa.herokuapp.com" && event.data.type === "start-streaming") {
-        startStreaming(event.data.signalingInfo);
+        handleStreaming(event.data.signalingInfo);
       }
     });
 
-    function startStreaming(signalingInfo) {
-      const remoteVideo = document.getElementById("remoteVideo");
-
-      // Set up the PC for receiving streaming
-      const pc = new RTCPeerConnection();
-      pc.ontrack = (event) => {
-        remoteVideo.srcObject = event.streams[0];
-      };
+    function handleStreaming(signalingInfo) {
       pc.setRemoteDescription(new RTCSessionDescription(signalingInfo))
         .then(() => pc.createAnswer())
         .then(answer => pc.setLocalDescription(answer))

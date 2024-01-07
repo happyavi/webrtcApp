@@ -70,12 +70,16 @@ connect.onclick = function () {
 };
 
 guest.onclick = function () {
+  // Trigger "receive-streaming" event when the "Receive Streaming" button is clicked
   socket.emit("receive-streaming");
 };
 
 socket.on("start-streaming", () => {
   // Display the stream locally
   client.srcObject = localeStream;
+
+  dashboard.style.display = "none";
+  stream.style.display = "block";
 });
 
 socket.on("offer", offer => {
