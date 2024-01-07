@@ -1,10 +1,10 @@
 // client.js
 var dashboard = document.querySelector("#dashboard"),
-  stream = document.querySelector("#stream"),
-  client = document.querySelector("#client"),
-  connect = document.querySelector("#connect"),
-  guest = document.querySelector("#guest"),
-  hangUp = document.querySelector("#hang-up");
+  stream = document.querySelector("#stream"),
+  client = document.querySelector("#client"),
+  connect = document.querySelector("#connect"),
+  guest = document.querySelector("#guest"),
+  hangUp = document.querySelector("#hang-up");
 
 const iceServers = {
   iceServers: [
@@ -20,19 +20,19 @@ var isSource = false;
 
 // Log RTCPeerConnection state changes
 pc.addEventListener('iceconnectionstatechange', () => {
-  console.log('ICE connection state:', pc.iceConnectionState);
+  console.log('ICE connection state:', pc.iceConnectionState);
 });
 
 pc.addEventListener('signalingstatechange', () => {
-  console.log('Signaling state:', pc.signalingState);
+  console.log('Signaling state:', pc.signalingState);
 });
 
 pc.addEventListener('connectionstatechange', () => {
-  console.log('Connection state:', pc.connectionState);
+  console.log('Connection state:', pc.connectionState);
 });
 
 hangUp.onclick = function (e) {
-  location.reload();
+  location.reload();
 };
 
 connect.onclick = function () {
@@ -50,18 +50,22 @@ connect.onclick = function () {
       pc.addTrack(localeStream.getTracks()[0], localeStream);
       pc.addTrack(localeStream.getTracks()[1], localeStream);
 
-      if (pc.signalingState === "stable") {
-        // Create and emit offer
-        pc.createOffer()
-          .then(offer => pc.setLocalDescription(offer))
-          .then(() => {
-            console.log("Setting local description:", pc.localDescription);
-            socket.emit("offer", pc.localDescription);
-          })
-          .catch(err => {
-            console.error("Error creating or setting local description:", err);
-          });
-      }
+      // Create and emit offer
+      pc.createOffer()
+        .then(offer => pc.setLocalDescription(offer))
+        .then(() => {
+          console.log("Setting local description:", pc.localDescription);
+          socket.emit("offer", pc.localDescription);
+        })
+        .catch(err => {
+          console.error("Error creating or setting local description:", err);
+        });
+
+      dashboard.style.display = "none";
+      stream.style.display = "block";
+    })
+    .catch(error => {
+      console.error("Error accessing user media:", error);
     });
 };
 
@@ -72,9 +76,6 @@ guest.onclick = function () {
 socket.on("start-streaming", () => {
   // Display the stream locally
   client.srcObject = localeStream;
-
-  dashboard.style.display = "none";
-  stream.style.display = "block";
 });
 
 socket.on("offer", offer => {
@@ -88,18 +89,11 @@ socket.on("offer", offer => {
   pc.onicecandidate = generateIceCandidate;
 
   pc.setRemoteDescription(new RTCSessionDescription(offer))
+    .then(() => pc.createAnswer())
+    .then(answer => pc.setLocalDescription(answer))
     .then(() => {
-      if (pc.signalingState === "have-remote-offer") {
-        return pc.createAnswer();
-      }
-    })
-    .then(description => pc.setLocalDescription(description))
-    .then(() => {
-      if (pc.localDescription) {
-        console.log("Setting local description", pc.localDescription);
-        // Pass the signaling information to the new tab
-        openNewTabAndSendSignalingInfo("https://webrtcappm-cf49c223a6aa.herokuapp.com/stream", pc.localDescription);
-      }
+      console.log("Setting local description:", pc.localDescription);
+      socket.emit("answer", pc.localDescription);
     })
     .catch(err => {
       console.error("Error setting remote description or creating local description:", err);
@@ -142,13 +136,4 @@ function generateIceCandidate(event) {
     console.log("Sending a candidate: ", candidate);
     socket.emit("candidate", candidate);
   }
-}
-
-function openNewTabAndSendSignalingInfo(newTabUrl, signalingInfo) {
-  const newTab = window.open(newTabUrl, "_blank");
-
-  // Pass the signaling information to the new tab
-  newTab.onload = function () {
-    newTab.postMessage({ type: "start-streaming", signalingInfo: signalingInfo }, newTabUrl);
-  };
 }
