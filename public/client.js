@@ -12,7 +12,7 @@ const iceServers = {
 };
 
 const pc = new RTCPeerConnection(iceServers);
-const socket = io("https://webrtcappm-cf49c223a6aa.herokuapp.com");
+const socket = io();
 
 var localeStream;
 var isSource = false;
@@ -43,10 +43,7 @@ connect.onclick = function () {
 };
 
 guest.onclick = function () {
-  // Trigger "receive-streaming" event when the "Receive Streaming" button is clicked
-  socket.emit("receive-streaming");
-  dashboard.style.display = "none";
-  stream.style.display = "block";
+  socket.emit("receive-streaming");
 };
 
 socket.on("start-streaming", () => {
@@ -68,23 +65,17 @@ socket.on("start-streaming", () => {
 });
 
 socket.on("receive-streaming", () => {
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
+  // Open a new tab or window with the specified URL to display the streaming video
+  const newTabUrl = "http://localhost:3000/stream";
+  const newTab = window.open(newTabUrl, "_blank");
 
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
+  // Pass the stream information to the new tab
+  newTab.onload = function () {
+    newTab.postMessage({ type: "start-streaming" }, newTabUrl);
+  };
+
+  dashboard.style.display = "none";
+  stream.style.display = "block";
 });
 
 socket.on("offer", offer => {
