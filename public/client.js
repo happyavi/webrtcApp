@@ -68,7 +68,7 @@ socket.on("start-streaming", () => {
 
 socket.on("receive-streaming", () => {
   // Redirect to a new tab with the stream.html
-  const newTabUrl = "stream.html";
+  const newTabUrl = "https://webrtcappm-cf49c223a6aa.herokuapp.com/stream";
   const newTab = window.open(newTabUrl, "_blank");
 
   // Pass the stream information to the new tab
