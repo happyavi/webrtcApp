@@ -66,21 +66,19 @@ socket.on("start-streaming", () => {
     });
 });
 
-// Replace this part in socket.on("receive-streaming", () => {...}) in client.js
 socket.on("receive-streaming", () => {
-  // Redirect to a new tab with the stream.html
-  const newTabUrl = "stream.html";
-  const newTab = window.open(newTabUrl, "_blank");
+  // Open a new tab or window with the specified URL to display the streaming video
+  const newTabUrl = "https://webrtcappm-cf49c223a6aa.herokuapp.com/stream";
+  const newTab = window.open(newTabUrl, "_blank");
 
-  // Pass the stream information to the new tab after a short delay
-  setTimeout(() => {
-    newTab.postMessage({ type: "start-streaming" }, newTabUrl);
-  }, 1000); // Adjust the delay as needed
-  
-  dashboard.style.display = "none";
-  stream.style.display = "block";
+  // Pass the stream information to the new tab
+  newTab.onload = function () {
+    newTab.postMessage({ type: "start-streaming" }, newTabUrl);
+  };
+
+  dashboard.style.display = "none";
+  stream.style.display = "block";
 });
-
 
 socket.on("offer", offer => {
   if (pc.signalingState !== "stable") {
