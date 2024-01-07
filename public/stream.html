@@ -23,7 +23,7 @@
   <video id="remoteVideo" autoplay></video>
   <script>
     window.addEventListener("message", (event) => {
-      if (event.origin === "http://localhost:3000" && event.data.type === "start-streaming") {
+      if (event.origin === "https://webrtcappm-cf49c223a6aa.herokuapp.com" && event.data.type === "start-streaming") {
         startStreaming();
       }
     });
