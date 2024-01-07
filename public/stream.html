@@ -21,25 +21,20 @@
 </head>
 <body>
   <video id="remoteVideo" autoplay></video>
+  
   <script>
-    window.addEventListener("message", (event) => {
-      if (event.origin === "https://webrtcappm-cf49c223a6aa.herokuapp.com" && event.data.type === "start-streaming") {
-        startStreaming();
-      }
-    });
-
-    function startStreaming() {
-      const remoteVideo = document.getElementById("remoteVideo");
-
-      navigator.mediaDevices
-        .getUserMedia({ video: true, audio: true })
-        .then((userStream) => {
-          remoteVideo.srcObject = userStream;
-        })
-        .catch((error) => {
-          console.error("Error accessing user media:", error);
-        });
-    }
+  window.addEventListener("message", (event) => {
+  	if (event.origin === "https://webrtcappm-cf49c223a6aa.herokuapp.com" && event.data.type === "start-streaming") {
+  	startStreaming(event.data.stream);  // Pass the received stream to startStreaming
+  	}
+  });
+  
+  function startStreaming(receivedStream) {
+  	const remoteVideo = document.getElementById("remoteVideo");
+  
+  	// Set the received stream as the source for remoteVideo
+  	remoteVideo.srcObject = receivedStream;
+  }
   </script>
 </body>
 </html>
