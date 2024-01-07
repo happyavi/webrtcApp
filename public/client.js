@@ -66,7 +66,7 @@ socket.on("start-streaming", () => {
 
 socket.on("receive-streaming", () => {
   // Open a new tab or window with the specified URL to display the streaming video
-  const newTabUrl = "http://localhost:3000/stream";
+  const newTabUrl = "https://webrtcappm-cf49c223a6aa.herokuapp.com/stream";
   const newTab = window.open(newTabUrl, "_blank");
 
   // Pass the stream information to the new tab
