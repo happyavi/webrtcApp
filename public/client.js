@@ -1,3 +1,4 @@
+// client.js
 var dashboard = document.querySelector("#dashboard"),
   stream = document.querySelector("#stream"),
   client = document.querySelector("#client"),
@@ -35,11 +36,33 @@ hangUp.onclick = function (e) {
 };
 
 connect.onclick = function () {
-  // Trigger "start-streaming" event when the "Start Streaming" button is clicked
-  socket.emit("start-streaming");
-  dashboard.style.display = "none";
-  stream.style.display = "block";
-  isSource = true; // Set the user as the source
+  // Capture user's media stream
+  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then(async userStream => {
+      localeStream = userStream;
+
+      // Display the stream locally
+      client.srcObject = userStream;
+
+      // Set up the PC for sending streaming
+      pc.ontrack = addRemoteMediaStream;
+      pc.onicecandidate = generateIceCandidate;
+      pc.addTrack(localeStream.getTracks()[0], localeStream);
+      pc.addTrack(localeStream.getTracks()[1], localeStream);
+
+      if (pc.signalingState === "stable") {
+        // Create and emit offer
+        pc.createOffer()
+          .then(offer => pc.setLocalDescription(offer))
+          .then(() => {
+            console.log("Setting local description:", pc.localDescription);
+            socket.emit("offer", pc.localDescription);
+          })
+          .catch(err => {
+            console.error("Error creating or setting local description:", err);
+          });
+      }
+    });
 };
 
 guest.onclick = function () {
@@ -47,99 +70,85 @@ guest.onclick = function () {
 };
 
 socket.on("start-streaming", () => {
-  // get user media
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then(async userStream => {
-      if (isSource) {
-        // If the user is the source, display their own stream
-        client.srcObject = userStream;
-      }
-      localeStream = userStream;
-      try {
-        client.play();
-      } catch (err) {
-        console.error(err);
-      }
-    });
-});
-
-socket.on("receive-streaming", () => {
-  // Open a new tab or window with the specified URL to display the streaming video
-  const newTabUrl = "https://webrtcappm-cf49c223a6aa.herokuapp.com/stream";
-  const newTab = window.open(newTabUrl, "_blank");
-
-  // Pass the stream information to the new tab
-  newTab.onload = function () {
-    newTab.postMessage({ type: "start-streaming" }, newTabUrl);
-  };
+  // Display the stream locally
+  client.srcObject = localeStream;
 
   dashboard.style.display = "none";
   stream.style.display = "block";
 });
 
 socket.on("offer", offer => {
-  if (pc.signalingState !== "stable") {
-    console.warn("Invalid signaling state for offer:", pc.signalingState);
-    return;
-  }
+  if (pc.signalingState !== "stable") {
+    console.warn("Invalid signaling state for offer:", pc.signalingState);
+    return;
+  }
 
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
 
-  pc.setRemoteDescription(new RTCSessionDescription(offer))
-    .then(() => {
-      if (pc.signalingState === "have-remote-offer") {
-        return pc.createAnswer();
-      }
-    })
-    .then(description => pc.setLocalDescription(description))
-    .then(() => {
-      if (pc.localDescription) {
-        console.log("Setting local description", pc.localDescription);
-        socket.emit("answer", pc.localDescription);
-      }
-    })
-    .catch(err => {
-      console.error("Error setting remote description or creating local description:", err);
-    });
+  pc.setRemoteDescription(new RTCSessionDescription(offer))
+    .then(() => {
+      if (pc.signalingState === "have-remote-offer") {
+        return pc.createAnswer();
+      }
+    })
+    .then(description => pc.setLocalDescription(description))
+    .then(() => {
+      if (pc.localDescription) {
+        console.log("Setting local description", pc.localDescription);
+        // Pass the signaling information to the new tab
+        openNewTabAndSendSignalingInfo("https://webrtcappm-cf49c223a6aa.herokuapp.com/stream", pc.localDescription);
+      }
+    })
+    .catch(err => {
+      console.error("Error setting remote description or creating local description:", err);
+    });
 });
 
 socket.on("answer", answer => {
-  pc.setRemoteDescription(new RTCSessionDescription(answer))
-    .catch(err => {
-      console.error("Error setting remote description:", err);
-    });
+  pc.setRemoteDescription(new RTCSessionDescription(answer))
+    .catch(err => {
+      console.error("Error setting remote description:", err);
+    });
 });
 
 socket.on("candidate", event => {
-  var iceCandidate = new RTCIceCandidate({
-    sdpMLineIndex: event.label,
-    candidate: event.candidate
-  });
-  pc.addIceCandidate(iceCandidate)
-    .catch(err => {
-      console.error("Error adding ice candidate:", err);
-    });
+  var iceCandidate = new RTCIceCandidate({
+    sdpMLineIndex: event.label,
+    candidate: event.candidate
+  });
+  pc.addIceCandidate(iceCandidate)
+    .catch(err => {
+      console.error("Error adding ice candidate:", err);
+    });
 });
 
 function addRemoteMediaStream(event) {
-  if (!isSource) {
-    // If the user is the receiver, display the remote stream
-    client.srcObject = event.streams[0];
-  }
+  if (!isSource) {
+    // If the user is the receiver, display the remote stream
+    client.srcObject = event.streams[0];
+  }
 }
 
 function generateIceCandidate(event) {
-  if (event.candidate) {
-    var candidate = {
-      type: "candidate",
-      label: event.candidate.sdpMLineIndex,
-      id: event.candidate.sdpMid,
-      candidate: event.candidate.candidate
-    };
-    console.log("Sending a candidate: ", candidate);
-    socket.emit("candidate", candidate);
-  }
+  if (event.candidate) {
+    var candidate = {
+      type: "candidate",
+      label: event.candidate.sdpMLineIndex,
+      id: event.candidate.sdpMid,
+      candidate: event.candidate.candidate
+    };
+    console.log("Sending a candidate: ", candidate);
+    socket.emit("candidate", candidate);
+  }
+}
+
+function openNewTabAndSendSignalingInfo(newTabUrl, signalingInfo) {
+  const newTab = window.open(newTabUrl, "_blank");
+
+  // Pass the signaling information to the new tab
+  newTab.onload = function () {
+    newTab.postMessage({ type: "start-streaming", signalingInfo: signalingInfo }, newTabUrl);
+  };
 }

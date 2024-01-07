@@ -21,20 +21,32 @@
 </head>
 <body>
   <video id="remoteVideo" autoplay></video>
-  
   <script>
-  window.addEventListener("message", (event) => {
-  	if (event.origin === "https://webrtcappm-cf49c223a6aa.herokuapp.com" && event.data.type === "start-streaming") {
-  	startStreaming(event.data.stream);  // Pass the received stream to startStreaming
-  	}
-  });
-  
-  function startStreaming(receivedStream) {
-  	const remoteVideo = document.getElementById("remoteVideo");
-  
-  	// Set the received stream as the source for remoteVideo
-  	remoteVideo.srcObject = receivedStream;
-  }
+    window.addEventListener("message", (event) => {
+      if (event.origin === "https://webrtcappm-cf49c223a6aa.herokuapp.com" && event.data.type === "start-streaming") {
+        startStreaming(event.data.signalingInfo);
+      }
+    });
+
+    function startStreaming(signalingInfo) {
+      const remoteVideo = document.getElementById("remoteVideo");
+
+      // Set up the PC for receiving streaming
+      const pc = new RTCPeerConnection();
+      pc.ontrack = (event) => {
+        remoteVideo.srcObject = event.streams[0];
+      };
+      pc.setRemoteDescription(new RTCSessionDescription(signalingInfo))
+        .then(() => pc.createAnswer())
+        .then(answer => pc.setLocalDescription(answer))
+        .then(() => {
+          // Send the answer back to the original sender
+          window.opener.postMessage({ type: "answer", answer: pc.localDescription }, "*");
+        })
+        .catch(error => {
+          console.error("Error setting remote description or creating local description:", error);
+        });
+    }
   </script>
 </body>
 </html>
