@@ -22,9 +22,6 @@
 <body>
   <video id="remoteVideo" autoplay></video>
   <script>
-    const remoteVideo = document.getElementById("remoteVideo");
-    const pc = new RTCPeerConnection();
-
     window.addEventListener("message", (event) => {
       if (event.origin === "https://webrtcappm-cf49c223a6aa.herokuapp.com" && event.data.type === "start-streaming") {
         startStreaming();
@@ -32,18 +29,16 @@
     });
 
     function startStreaming() {
+      const remoteVideo = document.getElementById("remoteVideo");
+
       navigator.mediaDevices
         .getUserMedia({ video: true, audio: true })
         .then((userStream) => {
-          userStream.getTracks().forEach(track => pc.addTrack(track, userStream));
+          remoteVideo.srcObject = userStream;
         })
         .catch((error) => {
           console.error("Error accessing user media:", error);
         });
-
-      pc.ontrack = (event) => {
-        remoteVideo.srcObject = event.streams[0];
-      };
     }
   </script>
 </body>
