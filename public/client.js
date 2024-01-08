@@ -14,9 +14,9 @@ const iceServers = {
 
 const pc = new RTCPeerConnection(iceServers);
 const socket = io();
-
-var localeStream;
-var isSource = false;
+let localeStream;
+let isSource = false;
+let remoteVideoTrack;
 
 // Log RTCPeerConnection state changes
 pc.addEventListener('iceconnectionstatechange', () => {
@@ -81,7 +81,10 @@ socket.on("start-streaming", () => {
 
 socket.on("receive-streaming", () => {
   // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
+  pc.ontrack = event => {
+    remoteVideoTrack = event.streams[0].getVideoTracks()[0];
+    addRemoteMediaStream(event);
+  };
   pc.onicecandidate = generateIceCandidate;
   pc.addTrack(localeStream.getTracks()[0], localeStream);
   pc.addTrack(localeStream.getTracks()[1], localeStream);
@@ -162,6 +165,9 @@ function addRemoteMediaStream(event) {
   if (!isSource) {
     // If the user is the receiver, display the remote stream
     client.srcObject = event.streams[0];
+	
+	// Get the video track from the remote stream
+    remoteVideoTrack = event.streams[0].getVideoTracks()[0];
 
     const obsWebSocket = new OBSWebSocket();
 	obsWebSocket.connect('ws://localhost:4455', 'happy1234')
