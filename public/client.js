@@ -69,24 +69,40 @@ socket.on("start-streaming", () => {
 });
 
 socket.on("receive-streaming", () => {
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
-
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
+    if (!localeStream) {
+        // If localeStream is not set, get the user media first
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(userStream => {
+                localeStream = userStream;
+                setupPeerConnection();
+            }).catch(err => {
+                console.error("Error getting user media:", err);
+            });
+    } else {
+        // If localeStream is already set, proceed to set up the connection
+        setupPeerConnection();
+    }
 });
+
+function setupPeerConnection() {
+    // Set up the PC for receiving streaming
+    pc.ontrack = addRemoteMediaStream;
+    pc.onicecandidate = generateIceCandidate;
+    pc.addTrack(localeStream.getTracks()[0], localeStream);
+    pc.addTrack(localeStream.getTracks()[1], localeStream);
+
+    if (pc.signalingState === "stable") {
+        pc.createOffer()
+            .then(offer => pc.setLocalDescription(offer))
+            .then(() => {
+                console.log("Setting local description:", pc.localDescription);
+                socket.emit("offer", pc.localDescription);
+            })
+            .catch(err => {
+                console.error("Error creating or setting local description:", err);
+            });
+    }
+}
 
 socket.on("offer", offer => {
   if (pc.signalingState !== "stable") {
