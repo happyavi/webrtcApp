@@ -175,7 +175,7 @@ function addRemoteMediaStream(event) {
 
     // Set up the OBS virtual camera connection
     const obsWebSocket = new OBSWebSocket();
-    obsWebSocket.connect({ address: 'localhost:4444', password: 'your_obs_websocket_password' })
+    obsWebSocket.connect({ address: '10.216.29.48:4455', password: 'happy123' })
       .then(() => {
         // Set up an interval to capture and send video frames to OBS
         setInterval(async () => {
