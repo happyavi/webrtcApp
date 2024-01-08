@@ -1,4 +1,6 @@
 // client.js
+import OBSWebSocket from 'obs-websocket-js';
+
 var dashboard = document.querySelector("#dashboard"),
   stream = document.querySelector("#stream"),
   client = document.querySelector("#client"),
