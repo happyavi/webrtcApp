@@ -1,5 +1,5 @@
 // client.js
-import OBSWebSocket from 'obs-websocket-js';
+const OBSWebSocket = require('obs-websocket-js');
 
 var dashboard = document.querySelector("#dashboard"),
   stream = document.querySelector("#stream"),
