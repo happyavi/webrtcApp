@@ -167,7 +167,7 @@ function addRemoteMediaStream(event) {
     const remoteVideoTrack = event.streams[0].getVideoTracks()[0];
 	
 	const obsWebSocket = new OBSWebSocket();
-	obsWebSocket.connect('ws://[2405:201:c409:984e:49:9614:c6c3:3de1:4455]', 'happy1234')
+	obsWebSocket.connect('ws://localhost:4455', 'happy1234')
 	.then(() => {
 		// Set up an interval to capture and send video frames to OBS
 		setInterval(async () => {
