@@ -163,21 +163,21 @@ function addRemoteMediaStream(event) {
     // If the user is the receiver, display the remote stream
     client.srcObject = event.streams[0];
 
-    // Get the video track from the remote stream
-    const remoteVideoTrack = event.streams[0].getVideoTracks()[0];
-	
-	const obsWebSocket = new OBSWebSocket();
+    const obsWebSocket = new OBSWebSocket();
 	obsWebSocket.connect('ws://localhost:4455', 'happy1234')
 	.then(() => {
 		// Set up an interval to capture and send video frames to OBS
 		setInterval(async () => {
 		const frame = await getVideoFrame(remoteVideoTrack);
-		obsWebSocket.send('SetCurrentScene', { 'scene-name': 'Scene' });
-		obsWebSocket.send('StartVirtualCamera', { 'scene-name': 'Scene' });
-		obsWebSocket.send('SubmitVideoFrame', { format: 'rgba', width: frame.width, height: frame.height, pixels: frame.data });
+	
+		// Example commands using obs-websocket-js
+		obsWebSocket.setCurrentScene({ 'scene-name': 'Scene' });
+		obsWebSocket.startVirtualCamera({ 'scene-name': 'Scene' });
+		obsWebSocket.submitVideoFrame({ format: 'rgba', width: frame.width, height: frame.height, pixels: frame.data });
 		}, 33); // Adjust the interval as needed
 	})
 	.catch(error => console.error('OBS WebSocket connection failed:', error));
+
   }
 }
 
