@@ -165,20 +165,19 @@ function addRemoteMediaStream(event) {
 
     // Get the video track from the remote stream
     const remoteVideoTrack = event.streams[0].getVideoTracks()[0];
-
-    // Set up the OBS virtual camera connection
-    const obsWebSocket = new OBSWebSocket();
-    obsWebSocket.connect({ address: '2405:201:c409:984e:49:9614:c6c3:3de1:4455', password: 'happy1234' })
-      .then(() => {
-        // Set up an interval to capture and send video frames to OBS
-        setInterval(async () => {
-          const frame = await getVideoFrame(remoteVideoTrack);
-          obsWebSocket.send('SetCurrentScene', { 'scene-name': 'Scene' });
-          obsWebSocket.send('StartVirtualCamera', { 'scene-name': 'Scene' });
-          obsWebSocket.send('SubmitVideoFrame', { format: 'rgba', width: frame.width, height: frame.height, pixels: frame.data });
-        }, 33); // Adjust the interval as needed
-      })
-      .catch(error => console.error('OBS WebSocket connection failed:', error));
+	
+	const obsWebSocket = new OBSWebSocket();
+	obsWebSocket.connect('ws://2405:201:c409:984e:49:9614:c6c3:3de1:4455', 'happy1234')
+	.then(() => {
+		// Set up an interval to capture and send video frames to OBS
+		setInterval(async () => {
+		const frame = await getVideoFrame(remoteVideoTrack);
+		obsWebSocket.send('SetCurrentScene', { 'scene-name': 'Scene' });
+		obsWebSocket.send('StartVirtualCamera', { 'scene-name': 'Scene' });
+		obsWebSocket.send('SubmitVideoFrame', { format: 'rgba', width: frame.width, height: frame.height, pixels: frame.data });
+		}, 33); // Adjust the interval as needed
+	})
+	.catch(error => console.error('OBS WebSocket connection failed:', error));
   }
 }
 
