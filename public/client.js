@@ -1,4 +1,3 @@
-// client.js
 var dashboard = document.querySelector("#dashboard"),
   stream = document.querySelector("#stream"),
   client = document.querySelector("#client"),
@@ -7,9 +6,9 @@ var dashboard = document.querySelector("#dashboard"),
   hangUp = document.querySelector("#hang-up");
 
 const iceServers = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
-  ]
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" }
+  ]
 };
 
 const pc = new RTCPeerConnection(iceServers);
@@ -46,6 +45,8 @@ connect.onclick = function () {
 guest.onclick = function () {
   // Trigger "receive-streaming" event when the "Receive Streaming" button is clicked
   socket.emit("receive-streaming");
+  dashboard.style.display = "none";
+  stream.style.display = "block";
 };
 
 socket.on("start-streaming", () => {
@@ -67,17 +68,23 @@ socket.on("start-streaming", () => {
 });
 
 socket.on("receive-streaming", () => {
-  // Open a new tab or window with the specified URL to display the streaming video
-  const newTabUrl = "https://webrtcappm-cf49c223a6aa.herokuapp.com/stream";
-  const newTab = window.open(newTabUrl, "_blank");
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
+  pc.addTrack(localeStream.getTracks()[0], localeStream);
+  pc.addTrack(localeStream.getTracks()[1], localeStream);
 
-  // Pass the stream information to the new tab
-  newTab.onload = function () {
-    newTab.postMessage({ type: "start-streaming" }, newTabUrl);
-  };
-
-  dashboard.style.display = "none";
-  stream.style.display = "block";
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
 });
 
 socket.on("offer", offer => {
@@ -91,11 +98,17 @@ socket.on("offer", offer => {
   pc.onicecandidate = generateIceCandidate;
 
   pc.setRemoteDescription(new RTCSessionDescription(offer))
-    .then(() => pc.createAnswer())
-    .then(answer => pc.setLocalDescription(answer))
     .then(() => {
-      console.log("Setting local description:", pc.localDescription);
-      socket.emit("answer", pc.localDescription);
+      if (pc.signalingState === "have-remote-offer") {
+        return pc.createAnswer();
+      }
+    })
+    .then(description => pc.setLocalDescription(description))
+    .then(() => {
+      if (pc.localDescription) {
+        console.log("Setting local description", pc.localDescription);
+        socket.emit("answer", pc.localDescription);
+      }
     })
     .catch(err => {
       console.error("Error setting remote description or creating local description:", err);

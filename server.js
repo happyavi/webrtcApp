@@ -2,7 +2,6 @@ const express = require("express");
 const app = express();
 const fs = require("fs");
 const PORT = process.env.PORT || 3000;
-const path = require("path"); 
 
 // const options = {
 //   key: fs.readFileSync("key.pem"),
@@ -18,12 +17,6 @@ app.use(express.static("public"));
 // Default route for Heroku
 app.get("/", (req, res) => {
   res.send("WebRTC application running on Heroku!");
-});
-
-app.get("/stream", (req, res) => {
-  const templatePath = path.join(__dirname, "public", "stream.html");
-  const templateContent = fs.readFileSync(templatePath, "utf-8");
-  res.send(templateContent);
 });
 
 io.on("connection", socket => {
