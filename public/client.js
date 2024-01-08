@@ -1,6 +1,4 @@
 // client.js
-const OBSWebSocket = require('obs-websocket-js');
-
 var dashboard = document.querySelector("#dashboard"),
   stream = document.querySelector("#stream"),
   client = document.querySelector("#client"),
@@ -146,13 +144,6 @@ socket.on("candidate", event => {
       console.error("Error adding ice candidate:", err);
     });
 });
-
-function addRemoteMediaStream(event) {
-  if (!isSource) {
-    // If the user is the receiver, display the remote stream
-    client.srcObject = event.streams[0];
-  }
-}
 
 function generateIceCandidate(event) {
   if (event.candidate) {
