@@ -1,9 +1,10 @@
+// client.js
 var dashboard = document.querySelector("#dashboard"),
-  stream = document.querySelector("#stream"),
-  client = document.querySelector("#client"),
-  connect = document.querySelector("#connect"),
-  guest = document.querySelector("#guest"),
-  hangUp = document.querySelector("#hang-up");
+  stream = document.querySelector("#stream"),
+  client = document.querySelector("#client"),
+  connect = document.querySelector("#connect"),
+  guest = document.querySelector("#guest"),
+  hangUp = document.querySelector("#hang-up");
 
 const iceServers = {
   iceServers: [
@@ -19,72 +20,83 @@ var isSource = false;
 
 // Log RTCPeerConnection state changes
 pc.addEventListener('iceconnectionstatechange', () => {
-  console.log('ICE connection state:', pc.iceConnectionState);
+  console.log('ICE connection state:', pc.iceConnectionState);
 });
 
 pc.addEventListener('signalingstatechange', () => {
-  console.log('Signaling state:', pc.signalingState);
+  console.log('Signaling state:', pc.signalingState);
 });
 
 pc.addEventListener('connectionstatechange', () => {
-  console.log('Connection state:', pc.connectionState);
+  console.log('Connection state:', pc.connectionState);
 });
 
 hangUp.onclick = function (e) {
-  location.reload();
+  location.reload();
 };
 
 connect.onclick = function () {
-  // Trigger "start-streaming" event when the "Start Streaming" button is clicked
-  socket.emit("start-streaming");
-  dashboard.style.display = "none";
-  stream.style.display = "block";
-  isSource = true; // Set the user as the source
+  // Trigger "start-streaming" event when the "Start Streaming" button is clicked
+  socket.emit("start-streaming");
+  dashboard.style.display = "none";
+  stream.style.display = "block";
+  isSource = true; // Set the user as the source
 };
 
 guest.onclick = function () {
-  // Trigger "receive-streaming" event when the "Receive Streaming" button is clicked
-  socket.emit("receive-streaming");
-  dashboard.style.display = "none";
-  stream.style.display = "block";
+  // Trigger "receive-streaming" event when the "Receive Streaming" button is clicked
+  socket.emit("receive-streaming");
+  dashboard.style.display = "none";
+  stream.style.display = "block";
 };
 
 socket.on("start-streaming", () => {
-  // get user media
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then(async userStream => {
-      if (isSource) {
-        // If the user is the source, display their own stream
-        client.srcObject = userStream;
-      }
-      localeStream = userStream;
-      try {
-        client.play();
-      } catch (err) {
-        console.error(err);
-      }
-    });
+  // get user media
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: true })
+    .then(async userStream => {
+      if (isSource) {
+        // If the user is the source, display their own stream
+        client.srcObject = userStream;
+
+        // Add the OBS virtual camera capture logic
+        const canvas = document.createElement('canvas');
+        canvas.width = 640; // Set the width as needed
+        canvas.height = 480; // Set the height as needed
+        const ctx = canvas.getContext('2d');
+        const virtualCameraStream = canvas.captureStream(30); // Set the frame rate as needed
+
+        // Connect the virtual camera stream with the user's media stream
+        userStream.addTrack(virtualCameraStream.getVideoTracks()[0]);
+        localeStream = userStream;
+
+        try {
+          client.play();
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    });
 });
 
 socket.on("receive-streaming", () => {
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
+  pc.addTrack(localeStream.getTracks()[0], localeStream);
+  pc.addTrack(localeStream.getTracks()[1], localeStream);
 
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
 });
 
 socket.on("offer", offer => {
@@ -151,4 +163,41 @@ function generateIceCandidate(event) {
     console.log("Sending a candidate: ", candidate);
     socket.emit("candidate", candidate);
   }
+}
+
+function addRemoteMediaStream(event) {
+  if (!isSource) {
+    // If the user is the receiver, display the remote stream
+    client.srcObject = event.streams[0];
+
+    // Get the video track from the remote stream
+    const remoteVideoTrack = event.streams[0].getVideoTracks()[0];
+
+    // Set up the OBS virtual camera connection
+    const obsWebSocket = new OBSWebSocket();
+    obsWebSocket.connect({ address: 'localhost:4444', password: 'your_obs_websocket_password' })
+      .then(() => {
+        // Set up an interval to capture and send video frames to OBS
+        setInterval(async () => {
+          const frame = await getVideoFrame(remoteVideoTrack);
+          obsWebSocket.send('SetCurrentScene', { 'scene-name': 'Scene' });
+          obsWebSocket.send('StartVirtualCamera', { 'scene-name': 'Scene' });
+          obsWebSocket.send('SubmitVideoFrame', { format: 'rgba', width: frame.width, height: frame.height, pixels: frame.data });
+        }, 33); // Adjust the interval as needed
+      })
+      .catch(error => console.error('OBS WebSocket connection failed:', error));
+  }
+}
+
+// Function to capture a video frame from the video track
+async function getVideoFrame(videoTrack) {
+  const imageCapture = new ImageCapture(videoTrack);
+  const bitmap = await imageCapture.grabFrame();
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  return imageData;
 }
