@@ -28,6 +28,15 @@ const socket = io();
 var localeStream;
 var isSource = false;
 
+// Detect network changes
+window.addEventListener('online', () => {
+  console.log('Network online. Attempting to restart the WebRTC connection.');
+  restartWebRTCConnection();
+});
+window.addEventListener('offline', () => {
+  console.log('Network offline. WebRTC connection might be affected.');
+});
+
 // Log RTCPeerConnection state changes
 pc.addEventListener('iceconnectionstatechange', () => {
   console.log('ICE connection state:', pc.iceConnectionState);
@@ -94,6 +103,18 @@ socket.on("receive-streaming", () => {
     }
 });
 
+function restartWebRTCConnection() {
+  if (pc && pc.iceConnectionState !== 'closed') {
+    pc.createOffer({ iceRestart: true })
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log('Restarting ICE process and sending new offer.');
+        socket.emit('offer', pc.localDescription);
+      })
+      .catch(err => console.error('Error during ICE restart:', err));
+  }
+}
+
 function setupPeerConnection() {
     // Set up the PC for receiving streaming
     pc.ontrack = addRemoteMediaStream;
@@ -112,6 +133,14 @@ function setupPeerConnection() {
                 console.error("Error creating or setting local description:", err);
             });
     }
+	
+	// Listen for ICE disconnection or failed states
+	pc.addEventListener('iceconnectionstatechange', () => {
+		if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+		console.log('ICE connection is disconnected or failed. Attempting to restart.');
+		restartWebRTCConnection();
+		}
+	});
 }
 
 socket.on("offer", offer => {
