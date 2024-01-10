@@ -63,7 +63,7 @@ guest.onclick = function () {
 socket.on("start-streaming", () => {
   // get user media
   navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
+    .getUserMedia({ video: true })
     .then(async userStream => {
       if (isSource) {
         // If the user is the source, display their own stream
