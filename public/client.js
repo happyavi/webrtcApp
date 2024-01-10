@@ -81,7 +81,7 @@ socket.on("start-streaming", () => {
 socket.on("receive-streaming", () => {
     if (!localeStream) {
         // If localeStream is not set, get the user media first
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        navigator.mediaDevices.getUserMedia({ video: true })
             .then(userStream => {
                 localeStream = userStream;
                 setupPeerConnection();
