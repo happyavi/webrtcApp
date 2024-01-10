@@ -8,7 +8,7 @@ var dashboard = document.querySelector("#dashboard"),
 
 const iceConfiguration = {
   iceServers: [
-    { urls: "stun:10.213.31.4:19302" }
+    { urls: "stun:stun.l.google.com:19302" }
   ]
 };
 
@@ -97,7 +97,19 @@ socket.on("receive-streaming", () => {
 function setupPeerConnection() {
     // Set up the PC for receiving streaming
     pc.ontrack = addRemoteMediaStream;
-    pc.onicecandidate = generateIceCandidate;
+    pc.onicecandidate = event => {
+        if (event.candidate) {
+            console.log("ICE Candidate:", event.candidate);
+
+            // Check if the candidate type is 'srflx', which indicates a STUN response
+            if (event.candidate.type === 'srflx') {
+                console.log("STUN server is accessible. Candidate provided by STUN:", event.candidate);
+            }
+        } else {
+            // No more candidates will be sent, the gathering process is complete
+            console.log("End of candidates.");
+        }
+    };
     pc.addTrack(localeStream.getTracks()[0], localeStream);
     pc.addTrack(localeStream.getTracks()[1], localeStream);
 
