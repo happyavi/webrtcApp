@@ -6,8 +6,6 @@ var dashboard = document.querySelector("#dashboard"),
   guest = document.querySelector("#guest"),
   hangUp = document.querySelector("#hang-up");
 
-var fileInput = document.querySelector("#fileInput");
-
 const iceConfiguration = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" }
@@ -42,42 +40,6 @@ pc.addEventListener('signalingstatechange', () => {
 pc.addEventListener('connectionstatechange', () => {
   console.log('Connection state:', pc.connectionState);
 });
-
-connectFile.onclick = function () {
-  // Open file selector when "Start Streaming from File" is clicked
-  fileInput.click();
-};
-
-fileInput.onchange = function (event) {
-  var file = event.target.files[0];
-  if (file) {
-    var fileReader = new FileReader();
-    fileReader.onload = function (e) {
-      var videoBlob = new Blob([new Uint8Array(e.target.result)], { type: 'video/mp4' });
-      var videoUrl = URL.createObjectURL(videoBlob);
-
-      // Use this video URL as the source for streaming
-      streamFile(videoUrl);
-    };
-    fileReader.readAsArrayBuffer(file);
-  }
-};
-
-function streamFile(videoUrl) {
-  var video = document.createElement('video');
-  video.src = videoUrl;
-  video.onloadedmetadata = function () {
-    video.play();
-    var stream = video.captureStream();
-    localeStream = stream;
-    isSource = true;
-    setupPeerConnection();
-    // Hide dashboard and show video element
-    dashboard.style.display = "none";
-    stream.style.display = "block";
-    client.srcObject = stream;
-  };
-}
 
 hangUp.onclick = function (e) {
   location.reload();
