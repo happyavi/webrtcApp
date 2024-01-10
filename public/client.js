@@ -153,3 +153,16 @@ function generateIceCandidate(event) {
     socket.emit("candidate", candidate);
   }
 }
+
+// Function to automatically start receiving the stream
+function autoStartReceiving() {
+    if (window.location.search.includes("autostart=true")) {
+        // Trigger the same actions as when 'Receive Streaming' is clicked
+        socket.emit("receive-streaming");  // This should initiate the same process as clicking the button
+        dashboard.style.display = "none";
+        stream.style.display = "block";
+    }
+}
+
+// Call this function when the window loads
+window.onload = autoStartReceiving;
