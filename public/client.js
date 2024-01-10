@@ -144,38 +144,38 @@ function setupPeerConnection() {
 }
 
 socket.on("offer", offer => {
-  if (pc.signalingState !== "stable") {
-    console.warn("Invalid signaling state for offer:", pc.signalingState);
-    return;
-  }
-
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-
-  pc.setRemoteDescription(new RTCSessionDescription(offer))
-    .then(() => {
-      if (pc.signalingState === "have-remote-offer") {
-        return pc.createAnswer();
-      }
-    })
-    .then(description => pc.setLocalDescription(description))
-    .then(() => {
-      if (pc.localDescription) {
-        console.log("Setting local description", pc.localDescription);
-        socket.emit("answer", pc.localDescription);
-      }
-    })
-    .catch(err => {
-      console.error("Error setting remote description or creating local description:", err);
-    });
+  // Only set remote description if signalingState allows
+  if (pc.signalingState === "stable" || pc.signalingState === "have-local-offer") {
+    pc.setRemoteDescription(new RTCSessionDescription(offer))
+      .then(() => {
+        if (pc.signalingState === "have-remote-offer") {
+          return pc.createAnswer();
+        }
+      })
+      .then(description => pc.setLocalDescription(description))
+      .then(() => {
+        if (pc.localDescription) {
+          console.log("Setting local description", pc.localDescription);
+          socket.emit("answer", pc.localDescription);
+        }
+      })
+      .catch(err => {
+        console.error("Error setting remote description or creating local description:", err);
+      });
+  } else {
+    console.warn("Received offer in unexpected signaling state:", pc.signalingState);
+  }
 });
 
 socket.on("answer", answer => {
-  pc.setRemoteDescription(new RTCSessionDescription(answer))
-    .catch(err => {
-      console.error("Error setting remote description:", err);
-    });
+  if (pc.signalingState === "have-remote-offer" || pc.signalingState === "have-local-pranswer") {
+    pc.setRemoteDescription(new RTCSessionDescription(answer))
+      .catch(err => {
+        console.error("Error setting remote description:", err);
+      });
+  } else {
+    console.warn("Received answer in unexpected signaling state:", pc.signalingState);
+  }
 });
 
 socket.on("candidate", event => {
