@@ -63,7 +63,7 @@ guest.onclick = function () {
 socket.on("start-streaming", () => {
   // get user media
   navigator.mediaDevices
-    .getUserMedia({ video: true })
+    .getUserMedia({ video: true, audio: true })
     .then(async userStream => {
       if (isSource) {
         // If the user is the source, display their own stream
@@ -81,7 +81,7 @@ socket.on("start-streaming", () => {
 socket.on("receive-streaming", () => {
     if (!localeStream) {
         // If localeStream is not set, get the user media first
-        navigator.mediaDevices.getUserMedia({ video: true })
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             .then(userStream => {
                 localeStream = userStream;
                 setupPeerConnection();
