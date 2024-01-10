@@ -6,21 +6,21 @@ var dashboard = document.querySelector("#dashboard"),
   guest = document.querySelector("#guest"),
   hangUp = document.querySelector("#hang-up");
 
-const iceConfiguration = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
-  ]
-};
-
 //const iceConfiguration = {
-//    iceServers: [
-//        {
-//            urls: 'turn:openrelay.metered.ca:80',
-//            username: 'openrelayproject',
-//            credential: 'openrelayproject'
-//        }
-//    ]
-//}
+//  iceServers: [
+//    { urls: "stun:stun.l.google.com:19302" }
+//  ]
+//};
+
+const iceConfiguration = {
+    iceServers: [
+        {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        }
+    ]
+}
 
 const pc = new RTCPeerConnection(iceConfiguration);
 const socket = io();
