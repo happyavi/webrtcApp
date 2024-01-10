@@ -24,13 +24,15 @@
   </head>
   <body>
     <div id="dashboard">
-      <div>
-        <button id="connect">Start Streaming</button>
-      </div>
-      <div>
-        <button id="guest">Receive Streaming</button>
-      </div>
-    </div>
+		<div>
+		<button id="connect">Start Streaming from Camera</button>
+		<button id="connectFile">Start Streaming from File</button>
+		<input type="file" id="fileInput" accept="video/*" style="display: none;" />
+		</div>
+		<div>
+		<button id="guest">Receive Streaming</button>
+		</div>
+	</div>
     <div id="stream" style="display: none;">
       <video id="client" autoplay></video>
       <div>
