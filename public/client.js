@@ -27,6 +27,7 @@ const socket = io();
 
 var localeStream;
 var isSource = false;
+var creatingOffer = false;
 
 // Detect network changes
 window.addEventListener('online', () => {
@@ -103,15 +104,18 @@ socket.on("receive-streaming", () => {
     }
 });
 
+
 function restartWebRTCConnection() {
-  if (pc && pc.iceConnectionState !== 'closed') {
+  if (pc && pc.iceConnectionState !== 'closed' && !creatingOffer) {
+    creatingOffer = true; // Set flag to indicate offer creation is in progress
     pc.createOffer({ iceRestart: true })
       .then(offer => pc.setLocalDescription(offer))
       .then(() => {
         console.log('Restarting ICE process and sending new offer.');
         socket.emit('offer', pc.localDescription);
       })
-      .catch(err => console.error('Error during ICE restart:', err));
+      .catch(err => console.error('Error during ICE restart:', err))
+      .finally(() => creatingOffer = false); // Reset flag after offer creation
   }
 }
 
@@ -136,11 +140,11 @@ function setupPeerConnection() {
 	
 	// Listen for ICE disconnection or failed states
 	pc.addEventListener('iceconnectionstatechange', () => {
-		if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-		console.log('ICE connection is disconnected or failed. Attempting to restart.');
-		restartWebRTCConnection();
-		}
-	});
+        if ((pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') && !creatingOffer) {
+            console.log('ICE connection is disconnected or failed. Attempting to restart.');
+            restartWebRTCConnection();
+        }
+    });
 }
 
 socket.on("offer", offer => {
