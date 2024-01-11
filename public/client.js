@@ -53,7 +53,7 @@ guest.onclick = function () {
 socket.on("start-streaming", () => {
   // get user media
   navigator.mediaDevices
-    .getUserMedia({ video: true })
+    .getUserMedia({ video: true, audio: true })
     .then(async userStream => {
       if (isSource) {
         // If the user is the source, display their own stream
@@ -73,7 +73,7 @@ socket.on("receive-streaming", () => {
   pc.ontrack = addRemoteMediaStream;
   pc.onicecandidate = generateIceCandidate;
   pc.addTrack(localeStream.getTracks()[0], localeStream);
-  //pc.addTrack(localeStream.getTracks()[1], localeStream);
+  pc.addTrack(localeStream.getTracks()[1], localeStream);
 
   if (pc.signalingState === "stable") {
     pc.createOffer()
