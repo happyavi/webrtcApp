@@ -69,26 +69,23 @@ socket.on("start-streaming", () => {
 });
 
 socket.on("receive-streaming", () => {
-    // Set up the PC for receiving streaming
-    pc.ontrack = addRemoteMediaStream;
-    pc.onicecandidate = generateIceCandidate;
+  // Set up the PC for receiving streaming
+  pc.ontrack = addRemoteMediaStream;
+  pc.onicecandidate = generateIceCandidate;
+  pc.addTrack(localeStream.getTracks()[0], localeStream);
+  //pc.addTrack(localeStream.getTracks()[1], localeStream);
 
-    // Add each track from the local stream to the peer connection
-    localeStream.getTracks().forEach(track => {
-        pc.addTrack(track, localeStream);
-    });
-
-    if (pc.signalingState === "stable") {
-        pc.createOffer()
-            .then(offer => pc.setLocalDescription(offer))
-            .then(() => {
-                console.log("Setting local description:", pc.localDescription);
-                socket.emit("offer", pc.localDescription);
-            })
-            .catch(err => {
-                console.error("Error creating or setting local description:", err);
-            });
-    }
+  if (pc.signalingState === "stable") {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        console.log("Setting local description:", pc.localDescription);
+        socket.emit("offer", pc.localDescription);
+      })
+      .catch(err => {
+        console.error("Error creating or setting local description:", err);
+      });
+  }
 });
 
 socket.on("offer", offer => {
