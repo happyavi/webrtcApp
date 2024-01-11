@@ -8,7 +8,7 @@ var dashboard = document.querySelector("#dashboard"),
 
 const iceServers = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
+    { urls: "turn:turn.anyfirewall.com:443?transport=tcp" }
   ]
 };
 
