@@ -30,7 +30,7 @@ const iceServers = {
     ]
 };
 
-const pc = new RTCPeerConnection(iceConfiguration);
+const pc = new RTCPeerConnection(iceServers);
 const socket = io();
 
 var localeStream;
