@@ -6,31 +6,23 @@ var dashboard = document.querySelector("#dashboard"),
   guest = document.querySelector("#guest"),
   hangUp = document.querySelector("#hang-up");
 
-//const iceServers = {
-//  iceServers: [
-//    { urls: "stun:bn-turn1.xirsys.com" }
-//  ]
-//};
-
-const iceServers = {
-    iceServers: [
-        { urls: "stun:bn-turn1.xirsys.com" },
-        {
-            username: "_LUZ7ohcFJxfNGkRIRAhBGCa09tnzOQkQCfKA0x-5tmPXOJbRls5CpQU2IlIF0pGAAAAAGWgORNoYXBwYXZp",
-            credential: "a8b4f284-b0b2-11ee-8542-0242ac140004",
-            urls: [
-                "turn:bn-turn1.xirsys.com:80?transport=udp",
-                "turn:bn-turn1.xirsys.com:3478?transport=udp",
-                "turn:bn-turn1.xirsys.com:80?transport=tcp",
-                "turn:bn-turn1.xirsys.com:3478?transport=tcp",
-                "turns:bn-turn1.xirsys.com:443?transport=tcp",
-                "turns:bn-turn1.xirsys.com:5349?transport=tcp"
-            ]
-        }
-    ]
+const iceConfiguration = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" }
+  ]
 };
 
-const pc = new RTCPeerConnection(iceServers);
+//const iceConfiguration = {
+//    iceServers: [
+//        {
+//            urls: 'turn:openrelay.metered.ca:80',
+//            username: 'openrelayproject',
+//            credential: 'openrelayproject'
+//        }
+//    ]
+//}
+
+const pc = new RTCPeerConnection(iceConfiguration);
 const socket = io();
 
 var localeStream;
@@ -87,24 +79,40 @@ socket.on("start-streaming", () => {
 });
 
 socket.on("receive-streaming", () => {
-  // Set up the PC for receiving streaming
-  pc.ontrack = addRemoteMediaStream;
-  pc.onicecandidate = generateIceCandidate;
-  pc.addTrack(localeStream.getTracks()[0], localeStream);
-  pc.addTrack(localeStream.getTracks()[1], localeStream);
-
-  if (pc.signalingState === "stable") {
-    pc.createOffer()
-      .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        console.log("Setting local description:", pc.localDescription);
-        socket.emit("offer", pc.localDescription);
-      })
-      .catch(err => {
-        console.error("Error creating or setting local description:", err);
-      });
-  }
+    if (!localeStream) {
+        // If localeStream is not set, get the user media first
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(userStream => {
+                localeStream = userStream;
+                setupPeerConnection();
+            }).catch(err => {
+                console.error("Error getting user media:", err);
+            });
+    } else {
+        // If localeStream is already set, proceed to set up the connection
+        setupPeerConnection();
+    }
 });
+
+function setupPeerConnection() {
+    // Set up the PC for receiving streaming
+    pc.ontrack = addRemoteMediaStream;
+    pc.onicecandidate = generateIceCandidate;
+    pc.addTrack(localeStream.getTracks()[0], localeStream);
+    pc.addTrack(localeStream.getTracks()[1], localeStream);
+
+    if (pc.signalingState === "stable") {
+        pc.createOffer()
+            .then(offer => pc.setLocalDescription(offer))
+            .then(() => {
+                console.log("Setting local description:", pc.localDescription);
+                socket.emit("offer", pc.localDescription);
+            })
+            .catch(err => {
+                console.error("Error creating or setting local description:", err);
+            });
+    }
+}
 
 socket.on("offer", offer => {
   if (pc.signalingState !== "stable") {
@@ -181,6 +189,3 @@ function autoStartReceiving() {
         stream.style.display = "block";
     }
 }
-
-// Call this function when the window loads
-window.onload = autoStartReceiving;
