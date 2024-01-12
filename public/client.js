@@ -189,3 +189,6 @@ function autoStartReceiving() {
         stream.style.display = "block";
     }
 }
+
+// Call this function when the window loads
+window.onload = autoStartReceiving;
