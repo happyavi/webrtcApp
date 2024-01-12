@@ -6,21 +6,29 @@ var dashboard = document.querySelector("#dashboard"),
   guest = document.querySelector("#guest"),
   hangUp = document.querySelector("#hang-up");
 
-const iceConfiguration = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
-  ]
-};
+//const iceServers = {
+//  iceServers: [
+//    { urls: "stun:bn-turn1.xirsys.com" }
+//  ]
+//};
 
-//const iceConfiguration = {
-//    iceServers: [
-//        {
-//            urls: 'turn:openrelay.metered.ca:80',
-//            username: 'openrelayproject',
-//            credential: 'openrelayproject'
-//        }
-//    ]
-//}
+const iceServers = {
+    iceServers: [
+        { urls: "stun:bn-turn1.xirsys.com" },
+        {
+            username: "_LUZ7ohcFJxfNGkRIRAhBGCa09tnzOQkQCfKA0x-5tmPXOJbRls5CpQU2IlIF0pGAAAAAGWgORNoYXBwYXZp",
+            credential: "a8b4f284-b0b2-11ee-8542-0242ac140004",
+            urls: [
+                "turn:bn-turn1.xirsys.com:80?transport=udp",
+                "turn:bn-turn1.xirsys.com:3478?transport=udp",
+                "turn:bn-turn1.xirsys.com:80?transport=tcp",
+                "turn:bn-turn1.xirsys.com:3478?transport=tcp",
+                "turns:bn-turn1.xirsys.com:443?transport=tcp",
+                "turns:bn-turn1.xirsys.com:5349?transport=tcp"
+            ]
+        }
+    ]
+};
 
 const pc = new RTCPeerConnection(iceConfiguration);
 const socket = io();
