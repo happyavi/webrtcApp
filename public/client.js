@@ -206,5 +206,24 @@ function autoStartReceiving() {
     }
 }
 
+// Function to automatically start playing the video
+function autoPlayVideo() {
+    if (window.location.search.includes("autostart=true")) {
+        // Get the video element
+        var video = document.getElementById("client");
+
+        // Check if the video element is present and has the 'autoplay' attribute
+        if (video && video.hasAttribute('autoplay')) {
+            // Play the video
+            video.play().catch(err => {
+                console.error("Error trying to play the video:", err);
+            });
+        }
+    }
+}
+
 // Call this function when the window loads
-window.onload = autoStartReceiving;
+window.onload = function() {
+    autoStartReceiving();
+    autoPlayVideo();
+};
