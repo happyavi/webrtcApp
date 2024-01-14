@@ -207,7 +207,7 @@ function autoStartReceiving() {
 }
 
 async function sendFrameToServer(frame) {
-    const response = await fetch('/send_frame', {
+    const response = await fetch('http://192.168.29.192:5000/send_frame', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
