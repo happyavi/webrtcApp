@@ -206,5 +206,30 @@ function autoStartReceiving() {
     }
 }
 
+async function sendFrameToServer(frame) {
+    const response = await fetch('/send_frame', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ frame: frame })
+    });
+    return response.text();
+}
+
+function captureFrame() {
+    const video = document.querySelector('#client'); // Assuming this is your video element
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const data = canvas.toDataURL('image/jpeg').split(',')[1]; // Get frame as Base64
+    sendFrameToServer(data);
+}
+
+// Call this function at an interval
+setInterval(captureFrame, 100); // Adjust interval as needed
+
 // Call this function when the window loads
 window.onload = autoStartReceiving;
